@@ -1,0 +1,345 @@
+[
+  {
+    "id": "lab6_blink",
+    "lab": 6,
+    "title": "Blink LD2–LD9",
+    "file": "lab6_blink.c",
+    "cables": [
+      [
+        "CNA",
+        "CNA1"
+      ]
+    ],
+    "jumpers": {},
+    "description": "Active-high outputs on P0.4–P0.11. Observe all eight LEDs blink.",
+    "status": "working"
+  },
+  {
+    "id": "lab6_switch",
+    "lab": 6,
+    "title": "SW2 controls LD2",
+    "file": "lab6_switch.c",
+    "cables": [
+      [
+        "CNA",
+        "CNA1"
+      ],
+      [
+        "CNB",
+        "CNB1"
+      ]
+    ],
+    "jumpers": {},
+    "description": "Poll P2.12. Press SW2 to illuminate LD2; release to turn it off.",
+    "status": "working"
+  },
+  {
+    "id": "lab7_sequence",
+    "lab": 7,
+    "title": "Serial LED ON / OFF",
+    "file": "lab7_sequence.c",
+    "cables": [
+      [
+        "CNA",
+        "CNA1"
+      ]
+    ],
+    "jumpers": {},
+    "description": "Corrected Lab 7 sample: illuminate each LED in sequence, then clear each in sequence.",
+    "status": "working"
+  },
+  {
+    "id": "lab7_binary",
+    "lab": 7,
+    "title": "8-bit binary up counter",
+    "file": "lab7_binary.c",
+    "cables": [
+      [
+        "CNA",
+        "CNA1"
+      ]
+    ],
+    "jumpers": {},
+    "description": "",
+    "status": "working"
+  },
+  {
+    "id": "lab7_updown",
+    "lab": 7,
+    "title": "SW2 up / down counter",
+    "file": "lab7_updown.c",
+    "cables": [
+      [
+        "CNA",
+        "CNA1"
+      ],
+      [
+        "CNB",
+        "CNB1"
+      ]
+    ],
+    "jumpers": {},
+    "description": "Released SW2 counts up; pressed SW2 counts down. Wraps at eight bits.",
+    "status": "working"
+  },
+  {
+    "id": "lab7_ring",
+    "lab": 7,
+    "title": "SW2 ring counter",
+    "file": "lab7_ring.c",
+    "cables": [
+      [
+        "CNA",
+        "CNA1"
+      ],
+      [
+        "CNB",
+        "CNB1"
+      ]
+    ],
+    "jumpers": {},
+    "description": "",
+    "status": "working"
+  },
+  {
+    "id": "lab8_bcd_up",
+    "lab": 8,
+    "title": "Four-digit BCD up counter",
+    "file": "lab8_bcd_up.c",
+    "cables": [
+      [
+        "CNA",
+        "CNA2"
+      ],
+      [
+        "CNB",
+        "CNB2"
+      ]
+    ],
+    "jumpers": {},
+    "description": "U7 uses a BCD digit address. Four displays are reconstructed from every GPIO transition.",
+    "status": "working"
+  },
+  {
+    "id": "lab8_bcd_updown",
+    "lab": 8,
+    "title": "BCD up / down with timer",
+    "file": "lab8_bcd_updown.c",
+    "cables": [
+      [
+        "CNA",
+        "CNA2"
+      ],
+      [
+        "CNB",
+        "CNB2"
+      ],
+      [
+        "CNC",
+        "CNB1"
+      ]
+    ],
+    "jumpers": {},
+    "description": "Timer0 controls increments. CNB is occupied by CNB2: SW2 may instead connect CNC→CNB1, requiring firmware to poll P0.21.",
+    "status": "working"
+  },
+  {
+    "id": "lab8_ring",
+    "lab": 8,
+    "title": "Four-digit binary ring counter",
+    "file": "lab8_ring.c",
+    "cables": [
+      [
+        "CNA",
+        "CNA2"
+      ],
+      [
+        "CNB",
+        "CNB2"
+      ]
+    ],
+    "jumpers": {},
+    "description": "",
+    "status": "working"
+  },
+  {
+    "id": "lab8_bcd_down",
+    "lab": 8,
+    "title": "Four-digit BCD down counter",
+    "file": "lab8_bcd_down.c",
+    "cables": [
+      [
+        "CNA",
+        "CNA2"
+      ],
+      [
+        "CNB",
+        "CNB2"
+      ]
+    ],
+    "jumpers": {},
+    "description": "",
+    "status": "working"
+  },
+  {
+    "id": "lab8_hex_updown",
+    "lab": 8,
+    "title": "Hexadecimal up / down counter",
+    "file": "lab8_hex_updown.c",
+    "cables": [
+      [
+        "CNA",
+        "CNA2"
+      ],
+      [
+        "CNB",
+        "CNB2"
+      ],
+      [
+        "CNC",
+        "CNB1"
+      ]
+    ],
+    "jumpers": {},
+    "description": "CNC→CNB1 routes SW2 pin 7 to P0.21 while CNB is used for digit selection.",
+    "status": "working"
+  },
+  {
+    "id": "lab9_message",
+    "lab": 9,
+    "title": "LCD message",
+    "file": "lab9_message.c",
+    "cables": [
+      [
+        "CND",
+        "CNAD"
+      ]
+    ],
+    "jumpers": {
+      "JP5": "closed",
+      "JP16": "closed"
+    },
+    "description": "",
+    "status": "working"
+  },
+  {
+    "id": "lab9_dice",
+    "lab": 9,
+    "title": "SW2 dice",
+    "file": "lab9_dice.c",
+    "cables": [
+      [
+        "CND",
+        "CNAD"
+      ],
+      [
+        "CNB",
+        "CNB1"
+      ]
+    ],
+    "jumpers": {
+      "JP5": "closed",
+      "JP16": "closed"
+    },
+    "description": "",
+    "status": "working"
+  },
+  {
+    "id": "lab9_keypad",
+    "lab": 9,
+    "title": "Keypad keycode on LCD",
+    "file": "lab9_keypad.c",
+    "cables": [
+      [
+        "CND",
+        "CNAD"
+      ],
+      [
+        "CNB",
+        "CNB3"
+      ]
+    ],
+    "jumpers": {
+      "JP5": "closed",
+      "JP16": "closed",
+      "JP4": "1-2"
+    },
+    "description": "",
+    "status": "working"
+  },
+  {
+    "id": "lab9_calculator",
+    "lab": 9,
+    "title": "Single-digit + / − calculator",
+    "file": "lab9_calculator.c",
+    "cables": [
+      [
+        "CND",
+        "CNAD"
+      ],
+      [
+        "CNB",
+        "CNB3"
+      ]
+    ],
+    "jumpers": {
+      "JP5": "closed",
+      "JP16": "closed",
+      "JP4": "1-2"
+    },
+    "description": "Use row-major keycodes: A adds, B subtracts, E equals, F clears. Operands are 0–9.",
+    "status": "working"
+  },
+  {
+    "id": "lab10_adc5",
+    "lab": 10,
+    "title": "POT1 / ADC0.5 on LCD",
+    "file": "lab10_adc5.c",
+    "cables": [
+      [
+        "CND",
+        "CNAD"
+      ]
+    ],
+    "jumpers": {
+      "JP5": "closed",
+      "JP16": "closed"
+    },
+    "description": "",
+    "status": "working"
+  },
+  {
+    "id": "lab10_difference",
+    "lab": 10,
+    "title": "POT4 − POT1 voltage difference",
+    "file": "lab10_difference.c",
+    "cables": [
+      [
+        "CND",
+        "CNAD"
+      ]
+    ],
+    "jumpers": {
+      "JP5": "closed",
+      "JP16": "closed",
+      "JP18": "2-3"
+    },
+    "description": "Displays the signed difference of 12-bit ADC readings. JP18 2–3 connects POT4 to AD0.4.",
+    "status": "working"
+  },
+  {
+    "id": "lab11_pwm",
+    "lab": 11,
+    "title": "PWM1.4 brightness sweep",
+    "file": "lab11_pwm.c",
+    "cables": [
+      [
+        "CNB",
+        "CNB1"
+      ]
+    ],
+    "jumpers": {},
+    "description": "Actual PWM interrupt handler changes MR4. LD10 brightness follows latched MR4 / MR0.",
+    "status": "working"
+  }
+]

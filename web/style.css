@@ -1,0 +1,89 @@
+:root{font-family:Inter,Segoe UI,Arial,sans-serif;color:#dce7e0;background:#0d1412;font-synthesis:none;font-size:14px;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0}
+button,input,select,textarea{font:inherit}
+button,select{border:1px solid #385044;background:#23392e;color:#eef4e8;border-radius:5px}
+button{padding:8px 12px;cursor:pointer;font-weight:550}
+button:hover:not(:disabled){background:#355544;border-color:#88ab8d}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid #edca77;outline-offset:3px}
+select{padding:8px;max-width:100%}
+h1,h2,h3,p{margin:0}
+h1{font-size:22px;font-weight:650;letter-spacing:-.6px}
+h1 span{font-weight:350;color:#b2c8b8}
+h2{font-size:18px;font-weight:550}
+h3{font-size:14px;font-weight:550}
+.app-shell{max-width:1600px;margin:auto;padding:0 24px 32px}
+.app-header{padding:22px 0;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.identity{display:flex;gap:14px;align-items:center}
+.chip-logo{height:40px;width:40px;display:flex;align-items:center;justify-content:center;border:1px solid #b7bb7c;border-radius:8px;color:#d5cb8c;font-family:Consolas,monospace;font-weight:700;background:#24382d;flex-shrink:0}
+.engine-state{display:flex;align-items:center;gap:9px;font:12px Consolas,monospace}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#c1b16b;flex-shrink:0}
+.dot.green{background:#80d5a3;box-shadow:0 0 8px #80d5a345}
+.dot.red{background:#ff7c6d}
+.screen-nav{display:flex;gap:8px;border-bottom:1px solid #293c31;padding-bottom:12px}
+.screen-nav a{color:#9cb2a3;text-decoration:none;padding:10px 19px;border-radius:5px;font-size:13px;border:1px solid transparent}
+.screen-nav a:hover{background:#1c2d23;color:#eef4e8}
+.screen-nav a[aria-current=page]{color:#eedca5;background:#293b2c;border-color:#4b5d40}
+.workspace{padding-top:22px;min-width:0}
+.panel{background:#141e19;border:1px solid #304236;border-radius:9px;overflow:hidden;min-width:0}
+.panel-heading{display:flex;justify-content:space-between;align-items:center;padding:18px;gap:12px}
+.board-panel{max-width:1440px;margin:auto}
+.zoom-control{display:flex;align-items:center;gap:8px;color:#9eb4a5;font-size:12px}
+.zoom-control input{width:85px;accent-color:#d0b77c}
+.board-scroll{overflow:auto;background:#17241d}
+.board{display:block;width:calc(100% * var(--board-zoom,1));min-width:800px;user-select:none;touch-action:manipulation}
+.header-target,.jumper-target,.momentary,.cable{cursor:pointer;outline:none}
+.header-target:focus>rect,.momentary:focus circle{stroke:#ffe9a6;stroke-width:4px}
+.jumper-target:focus .jumper-hit-area{stroke:#ffe9a6;stroke-width:2px}
+.jumper-target:hover .jumper-hit-area{stroke:#ffe0a3;stroke-width:1px}
+.header-target:hover>rect:first-of-type{stroke:#ffe0a3}
+.cable:hover>path:first-of-type,.cable:focus>path:first-of-type{stroke:#f6c970;opacity:.8}
+.cable-number{font:bold 15px Consolas,monospace;fill:#f8f7df;stroke:#14251c;stroke-width:4px;paint-order:stroke;pointer-events:none}
+.pots{display:flex;gap:20px;align-items:center;padding:16px;border-bottom:1px solid #304236;flex-wrap:wrap}
+.pots label{display:grid;grid-template-columns:1fr auto;gap:8px;flex:1;min-width:160px;font-size:12px;color:#becbb9}
+.pots label input{grid-column:1;grid-row:2;width:100%;accent-color:#d1b773}
+.pots output{grid-column:2;grid-row:2;font-family:Consolas,monospace;color:#e4cf92}
+.pwm-readout{font-size:11px;display:flex;flex-direction:column;gap:8px;color:#a4b6a9}
+.pwm-readout strong{font:17px Consolas,monospace;color:#e1cc8d}
+.board-connections{padding:16px;display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+.cable-tags{display:flex;flex-wrap:wrap;gap:8px}
+.cable-tags:empty{display:none}
+.cable-tags button{padding:6px 9px;font:12px Consolas,monospace;background:#1d3327}
+.cable-tags button span{padding-left:8px;color:#d3bd83}
+.jumper-tray{display:flex;gap:16px;flex-wrap:wrap}
+.jumper-tray label{display:flex;align-items:center;gap:7px;font-size:12px;color:#bfc7ae}
+.jumper-tray select{font-size:12px;padding:6px;background:#1c2d23}
+.runtime-controls{display:flex;flex-wrap:wrap;gap:7px;padding:0 18px 14px}
+.runtime-controls button{font-size:12px}
+.run{background:#2f6043;color:#e7f5df;border-color:#507b51}
+.current-exercise{color:#9fb2a0;font-size:12px;text-align:right}
+.editor-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 18px;color:#99af9e;font:12px Consolas,monospace;border-top:1px solid #304236}
+.code-editor-shell{display:grid;grid-template-columns:auto minmax(0,1fr);min-height:400px;height:calc(100dvh - 350px);resize:vertical;overflow:hidden;border-block:1px solid #2b3c2e;background:#0d1711;font:14px/1.75 Consolas,'Courier New',monospace}
+.line-number-gutter{min-width:4ch;overflow:hidden;border-right:1px solid #2b3c2e;background:#121e17;color:#829b89;text-align:right;user-select:none;pointer-events:none}
+.line-number-gutter pre{margin:0;padding:16px 10px;font:inherit}
+.code-editor{display:block;width:100%;height:100%;min-width:0;min-height:0;resize:none;border:0;border-radius:0;background:#0d1711;color:#d1dcb8;padding:16px;font:inherit;white-space:pre;tab-size:4;outline:none}
+.code-editor:focus{box-shadow:inset 2px 0 #beaa6b}
+.ide-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:14px 18px}
+.file-actions{display:flex;gap:7px;flex-wrap:wrap}
+.file-actions button{font-size:12px;background:#1e3025}
+.ide-actions .runtime-controls{padding:0;margin-left:auto}
+.compile{background:#d0ba7d;color:#1c281c;border-color:#d0ba7d;font-size:12px}
+.compile:hover:not(:disabled){background:#e1cc94}
+.diagnostics{margin:0 18px 16px;padding:12px;background:#0b1510;border:1px solid #2f4234;border-radius:5px;max-height:220px;overflow:auto}
+.diagnostics pre{font:12px/1.65 Consolas,monospace;color:#b7c7ad;margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.diagnostics pre.error,.error{color:#f39983}
+.diagnostics pre.error{margin-bottom:10px}
+.warning{padding:10px 13px;margin:0 18px 16px;background:#3a3020;border:1px solid #79603b;border-radius:5px;color:#efd2a2;font-size:12px;overflow-wrap:anywhere}
+.warning p+p{margin-top:7px}
+.labs-panel{max-width:1180px;margin:auto}
+.labs-panel>.panel-heading{padding:4px 0 24px}
+.lab-group{margin-bottom:26px}
+.lab-group h3{margin-bottom:12px;color:#c0c9ac}
+.exercise-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.exercise-card{min-height:82px;text-align:left;padding:18px;background:#141e19;border-color:#304236;line-height:1.5;font-weight:400}
+.exercise-card[aria-pressed=true]{border-color:#b8aa6b;background:#29392b;color:#eedca5;box-shadow:inset 3px 0 #b8aa6b}
+.loading{max-width:600px;margin:12vh auto;padding:24px}
+.loading p{margin-top:20px;color:#b9c7b2}
+@media(max-width:900px){.exercise-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ide-actions .runtime-controls{margin-left:0}.current-exercise{max-width:55%}}
+@media(max-width:600px){.app-shell{padding:0 10px 24px}.app-header{padding:16px 0}.chip-logo{width:32px;height:32px}.identity{gap:8px}h1{font-size:17px}.engine-state{font-size:10px}.workspace{padding-top:14px}.screen-nav{gap:4px}.screen-nav a{padding:9px 13px;font-size:12px}.panel-heading{padding:14px 12px}h2{font-size:16px}.zoom-control{font-size:10px}.zoom-control input{width:55px}.runtime-controls{padding:0 12px 12px}.runtime-controls button{font-size:11px;padding:7px 9px}.pots{gap:12px;padding:12px}.board-connections{padding:12px}.jumper-tray{gap:10px}.jumper-tray label,.jumper-tray select{font-size:11px}.current-exercise{font-size:10px}.editor-toolbar{padding:10px 12px;font-size:10px}.code-editor-shell{font-size:12px;min-height:400px}.ide-actions{padding:12px;gap:10px}.file-actions button{font-size:11px;padding:7px 9px}.diagnostics{margin:0 12px 12px}.exercise-grid{grid-template-columns:minmax(0,1fr)}.exercise-card{min-height:65px;padding:14px}}

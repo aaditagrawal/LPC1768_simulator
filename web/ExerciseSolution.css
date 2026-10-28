@@ -1,0 +1,13 @@
+.exercise-solution{margin-bottom:26px}
+.exercise-solution .panel-heading{flex-wrap:wrap}
+.solution-exercise{margin-top:6px;color:#b3c5b7;font-size:12px}
+.solution-actions{display:flex;gap:8px;flex-wrap:wrap}
+.solution-actions button{font-size:12px}
+.solution-note{padding:0 18px 14px;color:#99af9e;font-size:12px}
+.solution-message{padding:0 18px 18px;color:#b3c5b7}
+.solution-message button{margin-top:12px}
+.solution-code{display:flex;max-height:440px;overflow:auto;background:#0d1711;border-top:1px solid #2b3c2e;font:13px/1.75 Consolas,'Courier New',monospace;tab-size:4}
+.solution-code:focus-visible{outline:2px solid #edca77;outline-offset:-2px}
+.solution-code pre{margin:0;padding:16px;font:inherit;white-space:pre;color:#d1dcb8}
+.solution-code .solution-line-numbers{padding-inline:10px;color:#829b89;background:#121e17;border-right:1px solid #2b3c2e;text-align:right;user-select:none}
+@media(max-width:600px){.solution-code{font-size:12px;max-height:360px}.solution-note{padding-inline:12px}.solution-actions{width:100%}}
