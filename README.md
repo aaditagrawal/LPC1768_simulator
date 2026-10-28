@@ -67,6 +67,11 @@ For a standalone calculator using **F = equals, E = restart**, use
 [calculator_timer.c](examples/calculator_timer.c). It uses Timer0 delays instead
 of long software loops and configures keypad rows/columns for this board.
 
+For keypad-selected PWM brightness, use
+[pwm_keypad_timer.c](examples/pwm_keypad_timer.c): **CNB → CNB1**, **CND → CNB3**,
+and **JP5 closed**. Keys **0/1/2/3** select **10/25/50/75%** on LD10. On CND,
+P0.23–26 are keypad columns and P0.27 is row 0; JP4/JP18 are not needed.
+
 To display LCD text: connect **CND → CNAD**, close **JP5 and JP16**, then run
 the LCD reference. LCD initialization performed while disconnected is lost;
 reset after connecting, just as on the physical board. Disconnecting the data
