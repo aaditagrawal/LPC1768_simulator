@@ -52,8 +52,13 @@ void seg_scan(unsigned value,unsigned radix) {
   }
 }
 void timer_init(void) {
-  LPC_SC->PCONP |= 2; LPC_TIM0->TCR=2; LPC_TIM0->PR=99;
-  LPC_TIM0->MR0=1000; LPC_TIM0->MCR=3; LPC_TIM0->TCR=1;
+  SystemCoreClockUpdate();
+  LPC_SC->PCONP |= 2;
+  LPC_SC->PCLKSEL0 &= ~(3u << 2); /* Timer0 PCLK = CCLK / 4. */
+  LPC_TIM0->TCR=2;
+  LPC_TIM0->PR=SystemCoreClock / 4u / 1000u - 1u;
+  LPC_TIM0->MR0=1000; LPC_TIM0->MCR=3;
+  LPC_TIM0->IR=255; LPC_TIM0->TCR=1; /* One match each second. */
 }
 unsigned timer_elapsed(void) { if(LPC_TIM0->IR&1) {LPC_TIM0->IR=1; return 1;} return 0; }
 void adc_init(void) { LPC_SC->PCONP |= 1<<12; LPC_PINCON->PINSEL3 |= 0xF0000000; }
@@ -62,5 +67,5 @@ unsigned adc_read(unsigned channel) {
   do {v=LPC_ADC->ADGDR;} while(!(v&(1u<<31))); return (v>>4)&4095;
 }
 
-int main(void) {unsigned v=9999,n=0;setup();seg_init();
- while(1) {seg_scan(v,10);if(++n==20) {n=0;v=(v+9999)%10000;}} }
+int main(void) {unsigned v=9999;setup();seg_init();timer_init();
+ while(1) {seg_scan(v,10);if(timer_elapsed()) v=(v+9999)%10000;} }

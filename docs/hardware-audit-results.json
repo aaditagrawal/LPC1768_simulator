@@ -1,0 +1,79 @@
+{
+  "completed_utc": "2026-10-29T06:08:09Z",
+  "baseline_revision": "5069731bab7ab6e45c917cca8d43eb342abd13ec",
+  "baseline": {
+    "backend_passed": 129,
+    "browser_passed": 29,
+    "failures": 0,
+    "build": "PASS"
+  },
+  "final": {
+    "backend": {
+      "tests": 557,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "browser": {
+      "tests": 29,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "build": "PASS",
+    "unique_automated_cases": 586
+  },
+  "by_backend_module": {
+    "tests.test_adc_fidelity": 65,
+    "tests.test_calculator_exhaustive": 202,
+    "tests.test_display_fidelity": 80,
+    "tests.test_examples": 26,
+    "tests.test_execution_fidelity": 10,
+    "tests.test_exercise_requirements": 6,
+    "tests.test_firmware": 15,
+    "tests.test_gpio_fidelity": 17,
+    "tests.test_jumper_routes": 1,
+    "tests.test_manual_connectivity": 38,
+    "tests.test_mutations_fidelity": 23,
+    "tests.test_pwm_fidelity": 25,
+    "tests.test_pwm_keypad": 6,
+    "tests.test_realtime": 24,
+    "tests.test_runtime": 13,
+    "tests.test_user_calculator": 6
+  },
+  "finite_vectors": {
+    "digital_display_pwm": 8551,
+    "adc": 24572,
+    "total": 33123,
+    "failed": 0
+  },
+  "mutations": {
+    "executed": 28,
+    "detected": 28,
+    "survived": 0
+  },
+  "fix_groups": {
+    "model": 24,
+    "reference_firmware": 7
+  },
+  "gaps": {
+    "UNVERIFIED": 8,
+    "UNSUPPORTED": 9,
+    "physical_hardware_measurements": 0
+  },
+  "historical_snapshot_replay": {
+    "revision": "5069731bab7ab6e45c917cca8d43eb342abd13ec",
+    "pytest_exit_code": 1,
+    "tests": 41,
+    "failures": 41,
+    "errors": 0,
+    "skipped": 0,
+    "meaning": "Expected historical failures, separate from final regression results"
+  },
+  "source_sha256": {
+    "ESD.pdf": "9b93d75fc0c1815ac02127ddb522d52c3b643c7fa298ecb8d5f07a095eebf97b",
+    "ARM_LPC-1768_User_Manual (1).pdf": "06e5bec536f259b1d409a0768e22478553c03bf0feb3b7d8ffdc9f7dd49c7bb7"
+  },
+  "evidence": "TEST_REPORT.md; build/hardware-audit/summary.json and ledgers",
+  "scope": "Document-backed ideal digital behavior and explicit model conventions; physical equivalence remains unverified"
+}

@@ -152,7 +152,7 @@ def test_pwm_counter_uses_elapsed_time_and_its_pclk_divider(firmware):
       LPC_PWM1->LER=0x11;LPC_PWM1->MCR=2;LPC_PWM1->PCR=1u<<12;
       LPC_PWM1->TCR=9;while(1) {}}''')
     clock.advance(250_000_000)
-    assert m.read_word(Machine.PWM + 8) == 250
+    assert m.read_word(Machine.PWM + 8) == 251  # PWM cycle starts at1 (UM10360 Table447)
     assert m.pwm_duty() == pytest.approx(0.25)
 
 

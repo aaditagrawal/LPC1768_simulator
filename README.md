@@ -5,6 +5,23 @@ compiles the C; Unicorn executes real Cortex-M3 instructions.** Manual 10-pin
 ribbon cables and jumper positions determine which signals reach the board.
 There are no source-driven animations or exercise-specific simulation handlers.
 
+The hardware audit is documented in [TEST_REPORT.md](TEST_REPORT.md),
+[HARDWARE_SPEC.md](HARDWARE_SPEC.md), [COVERAGE_MATRIX.md](COVERAGE_MATRIX.md)
+and [HARDWARE_FIDELITY_GAPS.md](HARDWARE_FIDELITY_GAPS.md). Run the backend,
+frontend build and browser checks against an isolated service with:
+
+```powershell
+.\.venv\Scripts\python.exe tools/run_hardware_audit.py
+```
+
+The tested digital subset includes timed ADC conversion, PWM pin levels and
+deferred latches, keypad row diodes, decoder pullups, and retained external LCD
+state over MCU reset. LCD busy timing, analog effects and several other chip
+features remain outside the model; see the gaps report before relying on an
+unfamiliar program for an examination.
+If the app is already running, use `stop.bat` and then `start.bat` to load the
+updated Python peripheral models; recompiling C alone does not reload the server.
+
 ## Start on this machine
 
 Double-click **`start.bat`**, or run:

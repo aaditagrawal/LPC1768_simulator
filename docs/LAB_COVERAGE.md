@@ -1,5 +1,11 @@
 # Lab coverage
 
+Historical pre-audit record: current results, corrected reference behavior and
+coverage are in [TEST_REPORT.md](../TEST_REPORT.md),
+[HARDWARE_SPEC.md](../HARDWARE_SPEC.md) and
+[COVERAGE_MATRIX.md](../COVERAGE_MATRIX.md). The earlier results below are
+retained for provenance and do not describe the current model.
+
 See the [29 October 2026 peripheral connectivity audit](PERIPHERAL_CONNECTIVITY_AUDIT.md)
 for manual-derived routing checks, exact connections/jumper requirements,
 unsupported interfaces and reference timer/interrupt differences.

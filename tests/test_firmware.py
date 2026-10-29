@@ -142,7 +142,7 @@ def test_adc_actual_read_changes_leds(compile_c):
 def test_pwm_duty_is_firmware_controlled(compile_c):
     m = machine(compile_c, '''int main(void) {
       LPC_SC->PCONP|=1<<6; LPC_PINCON->PINSEL3=2<<14;
-      LPC_PWM1->MR0=1000; LPC_PWM1->MR4=250;
+      LPC_PWM1->MR0=1000; LPC_PWM1->MR4=250; LPC_PWM1->MCR=2;
       LPC_PWM1->PCR=1<<12; LPC_PWM1->LER=0x11; LPC_PWM1->TCR=9;
       while(1) {} }
     ''', [('CNB','CNB1')])

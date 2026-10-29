@@ -62,8 +62,8 @@ code. Leaving Board queues release of held inputs. Technical help, setup
 answers and reference-code loading are intentionally absent from the UI.
 
 Unicorn supplies CPU execution, not a complete LPC1768. The application supplies
-FIO/PINCON, the clock registers needed by installed SystemInit, immediate ADC
-conversions on two channels, a basic timer/PWM model and flat NVIC interrupt
+FIO/PINCON, the clock registers needed by installed SystemInit, 65-clock ADC
+conversions on two channels, timer/PWM counters with deferred PWM latches and flat NVIC interrupt
 delivery. Interrupts use actual vector table entries, an exception stack frame
 and Unicorn's exception-return callback. No nested interrupt/preemption support.
 Live timer/PWM counters advance from monotonic elapsed time using oscillator,

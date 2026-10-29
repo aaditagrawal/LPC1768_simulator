@@ -19,6 +19,7 @@ from unicorn.arm_const import (UC_ARM_REG_SP, UC_ARM_REG_PC, UC_ARM_REG_LR,
 
 from .board import Board
 from .displays import LCD, SevenSegment
+from .adc import ADCPeripheral
 
 
 class FirmwareError(ValueError):
@@ -65,8 +66,9 @@ class Machine:
         self.timer_fraction = {}
         self.adc_last = [0] * 8
         self.adc_global = 0
-        self.pwm_latched = {0: 0, 4: 0}
+        self.pwm_latched = {i: 0 for i in range(7)}
         self.board = Board(self)
+        self.adc = ADCPeripheral(self)
         self.uc = Uc(UC_ARCH_ARM, UC_MODE_THUMB | UC_MODE_MCLASS)
         self.uc.mem_map(0, self.FLASH_SIZE)
         self.uc.mem_map(0x10000000, 0x8000)
@@ -119,6 +121,7 @@ class Machine:
 
     def _block(self, uc, address, size, _):
         self.ticks += max(1, size // 2)
+        self._tick_adc_now()
         if self.ticks - self.last_timer_tick >= 64:
             self._tick_timers_now()
             self.last_timer_tick = self.ticks
@@ -153,14 +156,26 @@ class Machine:
         return 1 if mode == 0 else 0 if mode == 3 else None
 
     def pin_output(self, port, pin):
-        if self.function(port, pin) != 0 or not self.gpio[port].direction & (1 << pin):
+        if (port, pin) == (1, 23) and self.function(port, pin) == 2:
+            level = self.pwm_level()
+        elif self.function(port, pin) == 0 and self.gpio[port].direction & (1 << pin):
+            level = int(bool(self.gpio[port].latch & (1 << pin)))
+        else:
             return None
-        return int(bool(self.gpio[port].latch & (1 << pin)))
+        if (self.regs.get(self.PIN + 0x68 + port * 4, 0) & (1 << pin)
+                and level == 1):
+            return None
+        return level
 
     def gpio_value(self, port):
         g = self.gpio[port]
-        outputs = sum((1 << n) for n in range(32) if self.pin_output(port, n) is not None)
-        return ((g.latch & outputs) | (self.board.inputs(port) & ~outputs)) & ~g.mask & 0xFFFFFFFF
+        outputs = levels = 0
+        for n in range(32):
+            level = self.pin_output(port, n)
+            if level is not None:
+                outputs |= 1 << n
+                levels |= level << n
+        return (levels | (self.board.inputs(port) & ~outputs)) & ~g.mask & 0xFFFFFFFF
 
     def observe(self):
         if self.realtime:
@@ -222,21 +237,8 @@ class Machine:
             return self.regs.get(address, 0)
         if self.ADC <= address <= self.ADC+0x34:
             off = address - self.ADC
-            if off == 4 or 0x10 <= off <= 0x2C:
-                if self.regs.get(self.ADC, 0) & (1 << 16):
-                    self._convert_adc()
-                if off == 4:
-                    result = self.adc_global
-                    self.adc_global &= ~(1 << 31)
-                    return result
-                channel = (off-0x10)//4
-                result = self.adc_last[channel]
-                self.adc_last[channel] &= ~(1 << 31)
-                return result
-            if off == 0x30:
-                return sum((bool(v & (1<<31)) << i) for i,v in enumerate(self.adc_last))
-            if off in (0, 0xC, 0x34):
-                return self.regs.get(address, 0)
+            if off in (0, 4, 0xC, 0x30, 0x34) or 0x10 <= off <= 0x2C and off % 4 == 0:
+                return self.adc.read(off)
         if address == 0xE000E100 or address == 0xE000E180:
             return self.enabled_irq
         if address in (0xE000E200,0xE000E280):
@@ -289,6 +291,7 @@ class Machine:
             self.observe()
             return
         if self.SC <= address <= self.SC+0x1C8 and address-self.SC in self._sc_offsets():
+            self._tick_adc_now()
             if self.realtime:
                 # Account the elapsed interval before changing clock or power.
                 self._tick_timers_now()
@@ -299,9 +302,7 @@ class Machine:
             self.observe()
             return
         if address in (self.ADC,self.ADC+0xC,self.ADC+0x34):
-            store()
-            if address == self.ADC and (value & (7<<24) or value & (1<<16)):
-                self._convert_adc()
+            self.adc.write(address - self.ADC, value, mask)
             return
         if address == 0xE000E100:
             self.enabled_irq |= value
@@ -324,19 +325,24 @@ class Machine:
                 if off not in self._timer_offsets(base):
                     break
                 self._tick_timers_now()
+                previous_tcr = self.regs.get(base+4, 0)
                 if off == 0:
                     self.regs[address] = self.regs.get(address, 0) & ~value
                 else:
                     store()
                 if off == 4 and value & 2:
-                    self.regs[base+8] = self.regs[base+0x10] = 0
+                    self.regs[base+8] = int(base == self.PWM and bool(value & 8))
+                    self.regs[base+0x10] = 0
                     self.timer_fraction[base] = 0
                     self.pclk_fraction[base] = 0
-                if base == self.PWM and off == 0x50:
-                    for channel, match_off in ((0, 0x18), (4, 0x40)):
-                        if value & (1 << channel):
-                            self.pwm_latched[channel] = self.regs.get(base+match_off, 0)
-                    self.regs[address] = 0
+                if base == self.PWM:
+                    if off == 4 and value & 8 and not previous_tcr & 8:
+                        self.regs[base+8] = max(1, self.regs.get(base+8, 0))
+                    # Match registers are direct in timer mode and shadowed in
+                    # PWM mode. LER arms transfer at the next MR0 boundary.
+                    if off in self._pwm_match_offsets() and not self.regs.get(base+4, 0) & 8:
+                        channel = self._pwm_match_offsets().index(off)
+                        self.pwm_latched[channel] = self.regs[address]
                 return
         raise FirmwareError(f'Unsupported register write at 0x{address:08X}.')
 
@@ -345,23 +351,8 @@ class Machine:
         common = {0,4,8,0xC,0x10,0x14,0x18,0x1C,0x20,0x24,0x28,0x2C,0x30,0x34,0x38,0x3C}
         return common | ({0x40,0x44,0x48,0x4C,0x50,0x70} if base == Machine.PWM else {0x70})
 
-    def _convert_adc(self):
-        cr = self.regs.get(self.ADC, 0)
-        if not cr & (1<<21) or not self.regs.get(self.SC+0xC4, 0) & (1<<12):
-            return
-        for ch in range(8):
-            if not cr & (1<<ch):
-                continue
-            if ch not in (4,5):
-                self._fail(f'Unsupported ADC channel {ch}; only AD0.4 and AD0.5 are wired.')
-                return
-            valid = self.function(1, 26+ch) == 3 and (ch != 4 or self.board.jumpers['JP18'] == '2-3')
-            voltage = self.board.pots[ch] if valid else 0.0
-            sample = round(voltage / 3.3 * 4095)
-            self.adc_last[ch] = (1<<31) | (sample<<4)
-            self.adc_global = self.adc_last[ch] | (ch<<24)
-            if self.regs.get(self.ADC+0xC,0) & ((1<<ch)|(1<<8)):
-                self.pending_irq |= 1<<22
+    def _tick_adc_now(self):
+        self.adc.sync()
 
     def resume_clock(self):
         if self.realtime and self._clock_anchor is None:
@@ -370,6 +361,7 @@ class Machine:
     def pause_clock(self):
         if self.realtime:
             self._tick_timers_now()
+            self._tick_adc_now()
             self._clock_anchor = None
 
     def core_clock_hz(self):
@@ -396,7 +388,8 @@ class Machine:
         power = 6 if base == self.PWM else self.TIMERS[base][1]
         tcr = self.regs.get(base + 4, 0)
         return bool(self.regs.get(self.SC + 0xC4, 0) & (1 << power)
-                    and tcr & 1 and not tcr & 2)
+                    and tcr & 1 and not tcr & 2
+                    and not self.regs.get(base + 0x70, 0) & 3)
 
     def _tick_timers_now(self):
         if self.realtime:
@@ -450,8 +443,21 @@ class Machine:
         irq = 9 if base == self.PWM else self.TIMERS[base][0]
         counter = self.regs.get(base+8,0)
         mcr = self.regs.get(base+0x14,0)
-        matches=[(self.regs.get(base+off,0),(mcr>>(3*i))&7,i)
-                 for i,off in enumerate((0x18,0x1C,0x20,0x24)) if (mcr>>(3*i))&7]
+        pwm_mode = base == self.PWM and bool(self.regs.get(base+4, 0) & 8)
+        if pwm_mode:
+            # PWM holds TC=1..MR0, unlike Timer mode's zero-based count.
+            # Work in elapsed cycle phase internally; Table447 resets TC to1.
+            # Match actions occur on the edge after the held matching value,
+            # so MR0 still specifies MR0 clocks rather than MR0-1 clocks.
+            counter = (counter - 1) & 0xFFFFFFFF
+        offsets = self._pwm_match_offsets() if base == self.PWM else (0x18,0x1C,0x20,0x24)
+
+        def configured_matches():
+            return [(self.pwm_latched[i] if pwm_mode else self.regs.get(base+off,0),
+                     (mcr>>(3*i))&7, i) for i,off in enumerate(offsets)
+                    if (mcr>>(3*i))&7 or (pwm_mode and i == 0)]
+
+        matches = configured_matches()
         while steps:
             distances=[(((match-counter)&0xFFFFFFFF) or 0x100000000,action,i)
                        for match,action,i in matches]
@@ -466,10 +472,13 @@ class Machine:
                 if d!=distance:
                     continue
                 if action&1:
-                    self.regs[base]=self.regs.get(base,0)|(1<<i)
+                    self.regs[base]=self.regs.get(base,0)|(1<<self._match_ir_bit(base, i))
                     self.pending_irq|=1<<irq
                 reset|=bool(action&2)
                 stop|=bool(action&4)
+                if pwm_mode and i == 0:
+                    self._latch_pwm()
+                    matches = configured_matches()
             if reset:
                 counter=0
             if stop:
@@ -486,18 +495,49 @@ class Machine:
                 if period and not stop_in_period and steps >= period:
                     for match, action, i in matches:
                         if 0 < match <= period and action & 1:
-                            self.regs[base] = self.regs.get(base, 0) | (1 << i)
+                            self.regs[base] = self.regs.get(base, 0) | (1 << self._match_ir_bit(base, i))
                             self.pending_irq |= 1 << irq
                     steps %= period
-        self.regs[base+8] = counter
+        self.regs[base+8] = (counter + int(pwm_mode)) & 0xFFFFFFFF
 
-    def pwm_duty(self):
-        good = (self.function(1,23) == 2 and self.regs.get(self.SC+0xC4,0) & (1<<6)
+    @staticmethod
+    def _pwm_match_offsets():
+        return (0x18, 0x1C, 0x20, 0x24, 0x40, 0x44, 0x48)
+
+    @staticmethod
+    def _match_ir_bit(base, channel):
+        return channel + 4 if base == Machine.PWM and channel >= 4 else channel
+
+    def _latch_pwm(self):
+        enabled = self.regs.get(self.PWM + 0x50, 0)
+        for channel, offset in enumerate(self._pwm_match_offsets()):
+            if enabled & (1 << channel):
+                self.pwm_latched[channel] = self.regs.get(self.PWM + offset, 0)
+        self.regs[self.PWM + 0x50] = 0
+
+    def _pwm_enabled(self):
+        return bool(self.function(1,23) == 2 and self.regs.get(self.SC+0xC4,0) & (1<<6)
                 and self.regs.get(self.PWM+4,0) & 9 == 9
                 and not self.regs.get(self.PWM+4,0) & 2
-                and self.regs.get(self.PWM+0x4C,0) & (1<<12))
+                and self.regs.get(self.PWM+0x4C,0) & (1<<12)
+                and not self.regs.get(self.PWM+0x4C,0) & (1<<4)
+                and not self.regs.get(self.PWM+0x70,0) & 3)
+
+    def pwm_level(self):
+        """Instantaneous single-edge PWM1.4 electrical output (not brightness)."""
+        if not self._pwm_enabled():
+            return None
+        phase = (self.regs.get(self.PWM+8, 0) - 1) & 0xFFFFFFFF
+        return int(phase < self.pwm_latched[4])
+
+    def pwm_duty(self):
+        good = self._pwm_enabled()
+        # An open-drain pad cannot source current into LD10's grounded load.
+        if self.regs.get(self.PIN + 0x6C, 0) & (1 << 23):
+            return 0.0
         top = self.pwm_latched[0]
-        return min(1.0, self.pwm_latched[4]/top) if good and top else 0.0
+        periodic = bool(top and self.regs.get(self.PWM+0x14, 0) & 2)
+        return (min(1.0, self.pwm_latched[4]/top) if periodic else float(self.pwm_level() or 0)) if good else 0.0
 
     def _deliver_irq(self):
         pending = self.pending_irq & self.enabled_irq
@@ -524,13 +564,15 @@ class Machine:
     def _refresh_interrupts(self):
         # NVIC pending is cleared on entry, but a peripheral whose flag remains
         # asserted must request service again after exception return.
+        self._tick_adc_now()
         self.observe()
         self.pending_irq |= (self.regs.get(self.SC+0x140,0)&15)<<18
         for base in (*self.TIMERS,self.PWM):
             irq=9 if base==self.PWM else self.TIMERS[base][0]
             ir=self.regs.get(base,0)
             mcr=self.regs.get(base+0x14,0)
-            if any(ir&(1<<i) and mcr&(1<<(3*i)) for i in range(4)):
+            if any(ir&(1<<self._match_ir_bit(base, i)) and mcr&(1<<(3*i))
+                   for i in range(7 if base == self.PWM else 4)):
                 self.pending_irq|=1<<irq
 
     def _interrupt(self, uc, intno, _):

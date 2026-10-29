@@ -73,9 +73,10 @@ controls; backend checks include −9/zero results and release behavior. Evidenc
 ## Limits
 
 CPU instructions, software delay loops and high-frequency interrupt handlers
-remain limited by Unicorn/Python/host throughput. ADC conversion remains immediate.
-PLL lock/feed sequencing, clock tolerance, precise PWM edges and unsupported
-peripherals are not added by this change. Invalid timer configuration remains
+remain limited by Unicorn/Python/host throughput. ADC conversion now takes 65
+configured ADC clocks; PWM1.4 has counter-derived electrical levels and defers
+updates to a cycle boundary. PLL lock/feed sequencing, clock tolerance and
+unsupported peripherals remain limitations. See the root hardware audit reports. Invalid timer configuration remains
 invalid. The direct `Machine` default uses deterministic instruction-derived
 timing for offline tests; `Runtime` with its live worker enables elapsed time.
 

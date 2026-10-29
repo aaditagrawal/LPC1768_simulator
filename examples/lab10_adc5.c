@@ -56,9 +56,12 @@ void timer_init(void) {
   LPC_TIM0->MR0=1000; LPC_TIM0->MCR=3; LPC_TIM0->TCR=1;
 }
 unsigned timer_elapsed(void) { if(LPC_TIM0->IR&1) {LPC_TIM0->IR=1; return 1;} return 0; }
-void adc_init(void) { LPC_SC->PCONP |= 1<<12; LPC_PINCON->PINSEL3 |= 0xF0000000; }
+void adc_init(void) {
+  LPC_SC->PCONP |= 1<<12; LPC_PINCON->PINSEL3 |= 0xF0000000;
+  LPC_PINCON->PINMODE3 = (LPC_PINCON->PINMODE3 & ~0xF0000000) | 0xA0000000;
+}
 unsigned adc_read(unsigned channel) {
-  unsigned v; LPC_ADC->ADCR=(1<<channel)|(1<<21)|(1<<24);
+  unsigned v; LPC_ADC->ADCR=(1<<channel)|(1u<<8)|(1<<21)|(1<<24);
   do {v=LPC_ADC->ADGDR;} while(!(v&(1u<<31))); return (v>>4)&4095;
 }
 

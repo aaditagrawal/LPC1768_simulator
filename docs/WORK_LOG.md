@@ -1,5 +1,21 @@
 # Implementation and review record
 
+## 2026-10-29 hardware-fidelity audit
+
+Read both board/lab PDFs, established the documented wiring/register scope,
+and added independent finite-state, compiled-firmware, timing and mutation
+checks. Corrected 24 grouped model defects and seven reference-firmware issues.
+The final consolidated run passed 557 backend cases, 29 browser cases and the
+frontend build. Separate ledgers contain 33,123 passing input observations;
+28/28 named mutations are detected. Replaying 41 regressions against the original
+Git snapshot produces 41 expected failures with raw traces.
+
+The root TEST_REPORT.md, HARDWARE_SPEC.md, COVERAGE_MATRIX.md and
+HARDWARE_FIDELITY_GAPS.md are the current audit records. Earlier entries below
+are historical. Physical fidelity remains unverified, and accepted storage
+for an unimplemented register is not evidence of hardware support.
+
+
 * Repository initially held only manuals and JPEGs; no source or git repository.
 * User's detailed implementation specification authorized the backend spike and
   smallest viable end-to-end app. No extra design/approval gate was introduced.

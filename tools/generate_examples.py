@@ -64,9 +64,12 @@ void timer_init(void) {
   LPC_TIM0->MR0=1000; LPC_TIM0->MCR=3; LPC_TIM0->TCR=1;
 }
 unsigned timer_elapsed(void) { if(LPC_TIM0->IR&1) {LPC_TIM0->IR=1; return 1;} return 0; }
-void adc_init(void) { LPC_SC->PCONP |= 1<<12; LPC_PINCON->PINSEL3 |= 0xF0000000; }
+void adc_init(void) {
+  LPC_SC->PCONP |= 1<<12; LPC_PINCON->PINSEL3 |= 0xF0000000;
+  LPC_PINCON->PINMODE3=(LPC_PINCON->PINMODE3&~0xF0000000u)|0xA0000000u;
+}
 unsigned adc_read(unsigned channel) {
-  unsigned v; LPC_ADC->ADCR=(1<<channel)|(1<<21)|(1<<24);
+  unsigned v; LPC_ADC->ADCR=(1<<channel)|(1u<<8)|(1<<21)|(1<<24);
   do {v=LPC_ADC->ADGDR;} while(!(v&(1u<<31))); return (v>>4)&4095;
 }
 '''
@@ -117,15 +120,30 @@ add('lab8_ring',8,'Four-digit binary ring counter',r'''int main(void) {unsigned 
  LPC_GPIO0->FIOPIN=((v>>(d*4))&15)<<4;delay(40);
  LPC_GPIO0->FIOCLR=0xFF0;LPC_GPIO1->FIOPIN=5<<23;}
  if(++n==20) {n=0;v=((v<<1)|(v>>15))&65535;}} }''',SEG)
-add('lab8_bcd_down',8,'Four-digit BCD down counter',r'''int main(void) {unsigned v=9999,n=0;setup();seg_init();
- while(1) {seg_scan(v,10);if(++n==20) {n=0;v=(v+9999)%10000;}} }''',SEG)
+add('lab8_bcd_down',8,'Four-digit BCD down counter',r'''int main(void) {unsigned v=9999;setup();seg_init();timer_init();
+ while(1) {seg_scan(v,10);if(timer_elapsed()) v=(v+9999)%10000;} }''',SEG)
 add('lab8_hex_updown',8,'Hexadecimal up / down counter',r'''int main(void) {unsigned v=0;setup();seg_init();timer_init();
  while(1) {seg_scan(v,16);if(timer_elapsed()) v=(v+((LPC_GPIO0->FIOPIN&(1<<21))?1:-1))&65535;} }''',SEG+[['CNC','CNB1']],
  description='CNC→CNB1 routes SW2 pin 7 to P0.21 while CNB is used for digit selection.')
 add('lab9_message',9,'LCD message',r'''int main(void) {setup();lcd_init();lcd_text("MIT Manipal");
  lcd_at(0x40);lcd_text("LPC1768 Lab");while(1) {} }''',LCD,LCD_J)
-add('lab9_dice',9,'SW2 dice',r'''int main(void) {unsigned roll=0,old=1,s;setup();lcd_init();lcd_text("Press SW2");
- while(1) {roll=(roll+1)%6;s=switch_up();if(old&&!s) {lcd_at(0x40);lcd_text("Dice: ");lcd_number(roll+1);} old=s;} }''',LCD+[['CNB','CNB1']],LCD_J)
+add('lab9_dice',9,'SW2 dice',r'''volatile unsigned roll=0,dice_value=0,dice_pending=0;
+void EINT2_IRQHandler(void) {
+  LPC_SC->EXTINT=4;
+  dice_value=roll; /* ESD PDF p41 specifies 0 through 6. */
+  dice_pending=1;
+}
+int main(void) {setup();lcd_init();lcd_text("Press SW2");
+  LPC_PINCON->PINSEL4=(LPC_PINCON->PINSEL4&~(3u<<24))|(1u<<24);
+  LPC_SC->EXTMODE |= 4; LPC_SC->EXTPOLAR &= ~4u; LPC_SC->EXTINT=4;
+  NVIC_EnableIRQ(EINT2_IRQn);
+  while(1) {
+    roll=(roll+1)%7;
+    if(dice_pending) {
+      dice_pending=0;lcd_at(0x40);lcd_text("Dice: ");lcd_number(dice_value);
+    }
+  }
+}''',LCD+[['CNB','CNB1']],LCD_J)
 add('lab9_keypad',9,'Keypad keycode on LCD',r'''int main(void) {int key,old=-1;setup();lcd_init();keypad_init();lcd_text("Keycode 0-F");
  while(1) {key=keypad_read();if(key>=0&&key!=old) {lcd_at(0x40);lcd_text("Key: ");lcd_byte("0123456789ABCDEF"[key],1);} old=key;} }''',LCD+[['CNB','CNB3']],KEY_J)
 add('lab9_calculator',9,'Single-digit + / − calculator',r'''int main(void) {int key,old=-1,a=0,b=0,op=0,stage=0;setup();lcd_init();keypad_init();
@@ -155,6 +173,23 @@ int main(void) {setup();LPC_SC->PCONP|=1<<6;LPC_PINCON->PINSEL3=(LPC_PINCON->PIN
  LPC_PWM1->PCR=1<<12;LPC_PWM1->MCR=3;LPC_PWM1->MR0=30000;LPC_PWM1->MR4=0x500;
  LPC_PWM1->LER=0x11;LPC_PWM1->TCR=2;LPC_PWM1->TCR=9;NVIC_EnableIRQ(PWM1_IRQn);while(1) {} }''',[['CNB','CNB1']],
  description='Actual PWM interrupt handler changes MR4. LD10 brightness follows latched MR4 / MR0.')
+
+# Lab 8 timer exercises require one-second hardware-timer intervals. Keep the
+# unused common helper unchanged in other references to avoid unrelated rewrites.
+ONE_SECOND_TIMER = r'''void timer_init(void) {
+  SystemCoreClockUpdate();
+  LPC_SC->PCONP |= 2;
+  LPC_SC->PCLKSEL0 &= ~(3u << 2); /* Timer0 PCLK = CCLK / 4. */
+  LPC_TIM0->TCR=2;
+  LPC_TIM0->PR=SystemCoreClock / 4u / 1000u - 1u;
+  LPC_TIM0->MR0=1000; LPC_TIM0->MCR=3;
+  LPC_TIM0->IR=255; LPC_TIM0->TCR=1; /* One match each second. */
+}'''
+for timer_example in ('lab8_bcd_updown', 'lab8_hex_updown', 'lab8_bcd_down'):
+    timer_path = OUT / f'{timer_example}.c'
+    timer_source = timer_path.read_text(encoding='utf-8')
+    old_timer = COMMON[COMMON.index('void timer_init(void) {'):COMMON.index('unsigned timer_elapsed(void)')]
+    timer_path.write_text(timer_source.replace(old_timer, ONE_SECOND_TIMER + '\n'), encoding='utf-8')
 
 (OUT / 'catalog.json').write_text(json.dumps(SPECS,indent=2,ensure_ascii=False), encoding='utf-8')
 print(f'Generated {len(SPECS)} corrected standalone C reference programs.')

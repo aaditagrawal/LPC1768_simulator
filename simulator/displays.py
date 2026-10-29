@@ -10,6 +10,8 @@ class LCD:
         self.high = None
         self.display_on = False
         self.increment = 1
+        self.entry_shift = False
+        self.two_line = False
         self.enable = 0
         self.edges = 0
         self.shift = 0
@@ -38,12 +40,15 @@ class LCD:
         if rs:
             if not self.cgram:
                 self.ram[self.address & 127] = chr(value) if 32 <= value < 127 else '·'
-            self.address = (self.address + self.increment) & 127
+                if self.entry_shift:
+                    self.shift += self.increment
+            self._move_address(self.increment)
         elif value == 1:
             self.ram = [' '] * 128
             self.address = self.shift = 0
             self.cgram = False
-        elif value == 2:
+            self.increment = 1
+        elif value & 0xFE == 2:
             self.address = self.shift = 0
             self.cgram = False
         elif value & 128:
@@ -54,15 +59,26 @@ class LCD:
             self.cgram = True
         elif value & 32:
             self.four_bit = not bool(value & 16)
+            self.two_line = bool(value & 8)
         elif value & 16:
             if value & 8:
                 self.shift += -1 if value & 4 else 1
             else:
-                self.address = (self.address + (1 if value & 4 else -1)) & 127
+                self._move_address(1 if value & 4 else -1)
         elif value & 8:
             self.display_on = bool(value & 4)
         elif value & 4:
             self.increment = 1 if value & 2 else -1
+            self.entry_shift = bool(value & 1)
+
+    def _move_address(self, direction):
+        if self.cgram:
+            self.address = (self.address + direction) & 63
+        elif self.two_line:
+            boundaries = {0x27: 0x40, 0x67: 0} if direction > 0 else {0x40: 0x27, 0: 0x67}
+            self.address = boundaries.get(self.address, (self.address + direction) & 127)
+        else:
+            self.address = (self.address + direction) % 80
 
     def lines(self, powered=True):
         if not powered or not self.display_on:

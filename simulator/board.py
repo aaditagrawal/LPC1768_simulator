@@ -67,7 +67,10 @@ class Board:
             for i in range(10):
                 union(self._pin(a, i), self._pin(b, i))
         for k in self.keys:
-            union(f'ROW{k//4}', f'COL{k%4}')
+            # ESD schematic PDF p42: D6-D9 isolate the four ROW connector
+            # terminals from the switch buses. They are row diodes, not
+            # individual key diodes; rectangle ghosting remains possible.
+            union(f'MATRIX_ROW{k//4}', f'COL{k%4}')
         groups = {}
         for n in list(parents):
             groups.setdefault(find(n), []).append(n)
@@ -81,9 +84,11 @@ class Board:
         for a, b in self.cables:
             if MAPPING['headers'][a]['kind'] == MAPPING['headers'][b]['kind']:
                 warnings.append(f'{a} ↔ {b}: two {MAPPING["headers"][a]["kind"]} headers; check pin compatibility.')
-        for nodes in self.groups():
-            strong = []
-            mcupins = []
+        groups = self.groups()
+        drives = []
+        pins = []
+        for nodes in groups:
+            strong, mcupins = [], []
             for n in nodes:
                 if n == 'GND' or (n == 'SW2' and self.sw2):
                     strong.append(0)
@@ -95,12 +100,27 @@ class Board:
                     out = self.machine.pin_output(port, pin)
                     if out is not None:
                         strong.append(out)
+            drives.append(strong)
+            pins.append(mcupins)
+        # A driven HIGH conducts from ROW toward its matrix bus. A LOW on
+        # an unselected row cannot sink a different row through this diode.
+        # Weak internal MCU pulls do not overcome the external 15k pulldowns.
+        high_rows = {r for r in range(4) if any(
+            f'ROW{r}' in nodes and strong and min(strong) == 1
+            for nodes, strong in zip(groups, drives))}
+        for nodes, strong, mcupins in zip(groups, drives, pins):
+            if any(f'MATRIX_ROW{r}' in nodes for r in high_rows):
+                strong.append(1)
             if 0 in strong and 1 in strong:
                 warnings.append('Conflicting driven levels on ' + ', '.join(nodes) + '; resolving LOW.')
             if strong:
                 level = min(strong)
             elif any(n.startswith('COL') for n in nodes):
                 level = 0 # documented external column pulldowns
+            elif any(n.startswith('DIG') for n in nodes):
+                # R75-R78, 10k to +5V, on U7 A-D (ESD schematic PDF p31).
+                # Undriven selector inputs select 1111, disabling all digits.
+                level = 1
             else:
                 pulls = [self.machine.pin_pull(p, n) for p, n in mcupins]
                 level = 0 if 0 in pulls else 1 if 1 in pulls else 0
@@ -108,7 +128,7 @@ class Board:
                 # Weak MCU input pulls are observable by firmware, but cannot
                 # drive a disconnected/multiplexed output peripheral.
                 output_load = n.startswith(('LED','SEG','DIG','LCD')) or n == 'PWM_LED'
-                levels[n] = level if strong or not output_load else 0
+                levels[n] = level if strong or not output_load or n.startswith('DIG') else 0
         self.warnings = warnings
         return levels
 

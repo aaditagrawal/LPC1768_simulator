@@ -21,7 +21,10 @@ class Compilation:
 
 
 class Compiler:
-    def __init__(self, keil_root: str | Path | None = None):
+    def __init__(self, keil_root: str | Path | None = None, *, optimization=0):
+        if type(optimization) is not int or optimization not in range(4):
+            raise ValueError('Optimization must be an integer from 0 through 3.')
+        self.optimization = optimization
         self.root = Path(keil_root or os.environ.get('KEIL_ARM_ROOT', 'C:/Keil/ARM'))
         self.bin = self.root / 'ARMCC/bin'
 
@@ -53,7 +56,7 @@ class Compiler:
                 if p.returncode:
                     raise CompileError('\n'.join(diagnostics))
 
-            flags = ['--cpu', 'Cortex-M3', '--thumb', '--c99', '-O0', '-g',
+            flags = ['--cpu', 'Cortex-M3', '--thumb', '--c99', f'-O{self.optimization}', '-g',
                      '--library_type=microlib', '-I', self.root / 'INC/NXP/LPC17xx',
                      '-I', self.root / 'CMSIS/Include', '-c']
             run('armcc.exe', *flags, 'main.c', '-o', 'main.o')

@@ -98,7 +98,7 @@ test('firmware segment bits and PWM duty reach the drawn displays and respect ca
  await request.post('/api/physical', {data:{action:'disconnect', header:'CNB'}});
  const pwmSource = `#include <LPC17xx.h>
  int main(void) {LPC_SC->PCONP|=1<<6;LPC_PINCON->PINSEL3=2<<14;
- LPC_PWM1->MR0=1000;LPC_PWM1->MR4=250;LPC_PWM1->PCR=1<<12;
+ LPC_PWM1->MR0=1000;LPC_PWM1->MR4=250;LPC_PWM1->MCR=2;LPC_PWM1->PCR=1<<12;
  LPC_PWM1->LER=0x11;LPC_PWM1->TCR=9;while(1) {}}`;
  await compile(page, pwmSource);
  await request.post('/api/physical', {data:{action:'connect', a:'CNB', b:'CNB1'}});

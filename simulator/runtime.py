@@ -58,6 +58,10 @@ class Runtime:
 
     def _replace(self, candidate):
         old = self.machine.board
+        # Programming/reset restarts the MCU, not the separately powered LCD.
+        # Retain DDRAM and 4-bit transaction phase until firmware reinitializes
+        # the controller; observe below applies the reset GPIO signal levels.
+        candidate.lcd = self.machine.lcd
         b = candidate.board
         b.cables = [c[:] for c in old.cables]
         b.jumpers = dict(old.jumpers)

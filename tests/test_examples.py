@@ -129,7 +129,7 @@ def test_sw2_dice_reference(examples):
     m.board.sw2=True
     m.observe()
     s=wait_until(m,lambda s:s['lcd'][1].startswith('Dice: '))
-    assert s['lcd'][1][6] in '123456'
+    assert s['lcd'][1][6] in '0123456'  # ESD PDF p41's explicit range
     text=s['lcd'][1]
     assert advance(m,4)['lcd'][1]==text
 

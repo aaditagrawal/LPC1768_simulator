@@ -158,16 +158,19 @@ def test_all_keypad_rows_columns_and_release_on_any_gpio_header(firmware, header
 @pytest.mark.parametrize('channel,pin', [(4, 30), (5, 31)])
 def test_adc_voltage_sweep_mux_power_and_pot4_jumper(firmware, channel, pin):
     # box[0] controls whether firmware selects analog function 3; box[2] enables ADC power.
-    m = firmware(f'''int main(void) {{volatile unsigned *box=(void*){MAILBOX};
+    m = firmware(f'''int main(void) {{volatile unsigned *box=(void*){MAILBOX};unsigned raw;
       while(1) {{
         LPC_PINCON->PINSEL3=(box[0]?3u:0u)<<{2 * (pin - 16)};
         if(box[2]) LPC_SC->PCONP|=1u<<12; else LPC_SC->PCONP&=~(1u<<12);
-        LPC_ADC->ADCR=(1u<<{channel})|(1u<<21)|(1u<<24);
-        box[1]=LPC_ADC->ADGDR;
+        LPC_ADC->ADCR=(1u<<{channel})|(1u<<8)|(1u<<21)|(1u<<24);
+        /* UM10360 29.3: conversion requires 65 ADC clocks. */
+        do {{raw=LPC_ADC->ADGDR;}} while(box[2] && !(raw&(1u<<31)));
+        box[1]=raw;
       }} }}''')
     m.uc.mem_write(MAILBOX + 8, struct.pack('<I', 1))
     m.board.set_jumper('JP18', '2-3')
-    for voltage, expected in [(0, 0), (0.825, 1024), (1.65, 2048), (2.475, 3071), (3.3, 4095)]:
+    # NXP datasheet Fig28: 4096 equal ideal steps centered on integer LSBs.
+    for voltage, expected in [(0, 0), (0.825, 1024), (1.65, 2048), (2.475, 3072), (3.3, 4095)]:
         m.board.pots[channel] = voltage
         command(m, 1)
         raw = result(m)
@@ -213,7 +216,7 @@ def test_board_manual_external_interrupt_toggles_ld10(firmware):
 def test_pwm_manual_duty_levels_and_output_pinmux(firmware, duty):
     m = firmware(f'''int main(void) {{volatile unsigned *box=(void*){MAILBOX};
       LPC_SC->PCONP|=1u<<6;LPC_PWM1->MR0=1000;LPC_PWM1->MR4={duty * 10};
-      LPC_PWM1->LER=0x11;LPC_PWM1->PCR=1u<<12;LPC_PWM1->TCR=9;
+      LPC_PWM1->MCR=2;LPC_PWM1->LER=0x11;LPC_PWM1->PCR=1u<<12;LPC_PWM1->TCR=9;
       while(1) LPC_PINCON->PINSEL3=box[0]?(2u<<14):0;}}''')
     configure(m, 'CNB', 'CNB1')
     assert command(m, 1)['pwm'] == pytest.approx(duty / 100)
@@ -228,7 +231,7 @@ def test_lab11_keyboard_controls_pwm_with_separate_gpio_header(firmware):
       LPC_SC->PCONP|=1u<<6;LPC_PINCON->PINSEL3=2u<<14;
       LPC_GPIO0->FIODIR=15u<<19;LPC_GPIO0->FIOSET=1u<<19;
       LPC_PWM1->MR0=1000;LPC_PWM1->MR4=0;LPC_PWM1->LER=0x11;
-      LPC_PWM1->PCR=1u<<12;LPC_PWM1->TCR=9;
+      LPC_PWM1->MCR=2;LPC_PWM1->PCR=1u<<12;LPC_PWM1->TCR=9;
       while(1) {bits=(LPC_GPIO0->FIOPIN>>15)&15;
         if(bits) {LPC_PWM1->MR4=(bits&1)?100:(bits&2)?250:(bits&4)?500:750;
           LPC_PWM1->LER=0x10;}}}''')

@@ -52,8 +52,13 @@ void seg_scan(unsigned value,unsigned radix) {
   }
 }
 void timer_init(void) {
-  LPC_SC->PCONP |= 2; LPC_TIM0->TCR=2; LPC_TIM0->PR=99;
-  LPC_TIM0->MR0=1000; LPC_TIM0->MCR=3; LPC_TIM0->TCR=1;
+  SystemCoreClockUpdate();
+  LPC_SC->PCONP |= 2;
+  LPC_SC->PCLKSEL0 &= ~(3u << 2); /* Timer0 PCLK = CCLK / 4. */
+  LPC_TIM0->TCR=2;
+  LPC_TIM0->PR=SystemCoreClock / 4u / 1000u - 1u;
+  LPC_TIM0->MR0=1000; LPC_TIM0->MCR=3;
+  LPC_TIM0->IR=255; LPC_TIM0->TCR=1; /* One match each second. */
 }
 unsigned timer_elapsed(void) { if(LPC_TIM0->IR&1) {LPC_TIM0->IR=1; return 1;} return 0; }
 void adc_init(void) { LPC_SC->PCONP |= 1<<12; LPC_PINCON->PINSEL3 |= 0xF0000000; }

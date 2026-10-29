@@ -62,5 +62,20 @@ unsigned adc_read(unsigned channel) {
   do {v=LPC_ADC->ADGDR;} while(!(v&(1u<<31))); return (v>>4)&4095;
 }
 
-int main(void) {unsigned roll=0,old=1,s;setup();lcd_init();lcd_text("Press SW2");
- while(1) {roll=(roll+1)%6;s=switch_up();if(old&&!s) {lcd_at(0x40);lcd_text("Dice: ");lcd_number(roll+1);} old=s;} }
+volatile unsigned roll=0,dice_value=0,dice_pending=0;
+void EINT2_IRQHandler(void) {
+  LPC_SC->EXTINT=4;
+  dice_value=roll; /* ESD PDF p41 specifies 0 through 6. */
+  dice_pending=1;
+}
+int main(void) {setup();lcd_init();lcd_text("Press SW2");
+  LPC_PINCON->PINSEL4=(LPC_PINCON->PINSEL4&~(3u<<24))|(1u<<24);
+  LPC_SC->EXTMODE |= 4; LPC_SC->EXTPOLAR &= ~4u; LPC_SC->EXTINT=4;
+  NVIC_EnableIRQ(EINT2_IRQn);
+  while(1) {
+    roll=(roll+1)%7;
+    if(dice_pending) {
+      dice_pending=0;lcd_at(0x40);lcd_text("Dice: ");lcd_number(dice_value);
+    }
+  }
+}
