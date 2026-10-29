@@ -230,6 +230,45 @@ def test_live_runtime_freezes_and_reanchors_its_machine_clock(firmware):
         rt.close()
 
 
+@pytest.mark.parametrize('retained_hook', [False, True])
+def test_frequent_live_systick_does_not_starve_foreground_loop(retained_hook):
+    import io
+    from intelhex import IntelHex
+    from unicorn.arm_const import UC_ARM_REG_R0
+    image = bytearray(0x130)
+    struct.pack_into('<II', image, 0, 0x10008000, 0x101)
+    struct.pack_into('<I', image, 15 * 4, 0x121)
+    image[0x100:0x106] = bytes.fromhex('00200130fde7')  # R0++ loop
+    image[0x120:0x130] = bytes.fromhex('02490a6801320a607047000000700010')
+    ih = IntelHex()
+    ih.frombytes(image)
+    stream = io.StringIO()
+    ih.write_hex_file(stream)
+    clock = Clock()
+    machine = Machine(stream.getvalue(), realtime=True, clock_ns=clock)
+    machine.resume_clock()
+    machine.run(100, fast=True, timeout_us=0)
+    if retained_hook:
+        machine.run(1, timeout_us=0)
+    emu_start = machine.uc.emu_start
+    def host_gap_after_return(*args, **kwargs):
+        was_in_handler = machine.active_irq is not None
+        emu_start(*args, **kwargs)
+        if was_in_handler and machine.active_irq is None:
+            clock.advance(2_000_000)
+    machine.uc.emu_start = host_gap_after_return
+    machine.write_word(0xe000e014, 3999)  # 1 ms at reset 4 MHz
+    machine.write_word(0xe000e010, 7)
+    for expected in range(1, 5):
+        before = machine.uc.reg_read(UC_ARM_REG_R0)
+        clock.advance(2_000_000)  # another IRQ is pending on every host slice
+        machine.run(20000, fast=True, timeout_us=0)
+        assert machine.uc.reg_read(UC_ARM_REG_R0) > before
+        assert int.from_bytes(machine.uc.mem_read(MAILBOX, 4), 'little') == expected
+        assert machine.active_irq is None
+        assert (machine._block_hook is not None) == retained_hook
+
+
 def test_millisecond_multiplexed_counter_advances_near_wall_clock_seconds():
     source = (Path(__file__).parent / 'fixtures/realtime_counter.c').read_text()
     rt = Runtime()
