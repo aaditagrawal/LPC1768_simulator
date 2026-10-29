@@ -167,7 +167,7 @@ export function App() {
   {diagnosticText&&<pre role="status">{diagnosticText}</pre>}
  </div>:null;
 
- return <div className="app-shell">
+ return <div className={`app-shell${screen==='board'?' board-view':''}`}>
   <header className="app-header">
    <div className="identity"><div className="chip-logo">M3</div><h1>LPC1768 <span>Virtual Lab</span></h1></div>
    <div className="engine-state"><span className={`dot ${running?'green':state.status==='error'?'red':''}`}/><span>{state.status.toUpperCase()}</span></div>
@@ -179,13 +179,20 @@ export function App() {
   </nav>
   <main className={`workspace ${screen}-screen`}>
    {screen==='board'&&<section className="board-panel panel" aria-label="Virtual board panel">
+    <div className="board-toolbar">
     <div className="panel-heading"><h2>Virtual evaluation board</h2>
-     <label className="zoom-control">Zoom <input aria-label="Board zoom" type="range" min="100" max="180" step="10" value={zoom} onChange={e=>setZoom(Number(e.target.value))}/></label>
+     <div className="board-zoom-tools">
+      <button aria-label="Fit board to screen" onClick={()=>setZoom(100)}>Fit</button>
+      <label className="zoom-control">Zoom <input aria-label="Board zoom" type="range" min="100" max="180" step="10" value={zoom} onChange={e=>setZoom(Number(e.target.value))}/></label>
+     </div>
     </div>
     {runtimeControls}
+    </div>
+    <div className="board-workspace">
     <div className="zoom-container" style={{'--board-zoom':zoom/100} as React.CSSProperties}>
      <Board info={info} state={state} layout={layout} physical={physical} control={action=>{void control(action);}}/>
     </div>
+    <aside className="board-sidebar" aria-label="Board connections and messages">
     <div className="board-connections">
      <div className="cable-tags" aria-label="Connected cables">{state.cables.map(([a,b])=><button key={a} onClick={()=>{void physical({action:'disconnect',header:a});}} aria-label={`Disconnect cable ${a} to ${b}`}>{a} ↔ {b} <span>×</span></button>)}</div>
      <div className="jumper-tray">
@@ -197,6 +204,8 @@ export function App() {
     </div>
     {state.warnings.length>0&&<div className="warning" role="status">{state.warnings.map(w=><p key={w}>{w}</p>)}</div>}
     {diagnostics}
+    </aside>
+    </div>
    </section>}
    {screen==='ide'&&<section className="ide-panel panel" aria-label="IDE">
     <div className="panel-heading"><h2>IDE</h2><span className="current-exercise">{spec?.title}</span></div>
