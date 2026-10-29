@@ -1,7 +1,7 @@
 import {test, expect} from '@playwright/test';
 import {readFile, writeFile} from 'node:fs/promises';
 
-test('timer-delayed calculator reaches the LCD with F equals and E restart at existing refresh cadence', async ({page, request}) => {
+test('timer-delayed calculator reaches the LCD with F equals and E restart at the faster refresh cadence', async ({page, request}) => {
  const state = await (await request.get('/api/state')).json();
  await request.post('/api/control', {data:{action:'stop'}});
  for (const [header] of state.cables)

@@ -2,7 +2,9 @@
 
 Live Timer0–Timer3 and PWM1 counters now advance from a monotonic host clock.
 They no longer use executed instruction counts as their time source. The browser
-continues polling at its existing 150 ms interval; it is only a presentation layer.
+polls every 50 ms (up to 20 updates per second). An in-flight guard skips polls
+while a request is pending, so requests do not pile up. This improves visual
+feedback; CPU execution and peripheral clocks keep their existing timing behavior.
 
 The configured oscillator (4 MHz IRC, board 12 MHz crystal or 32.768 kHz RTC
 source), PLL0 multiplier/predivider, CCLK divider and each peripheral's PCLKSEL
@@ -19,7 +21,7 @@ a later stop match is unreachable behind an earlier reset.
 
 The worker executes bounded 1 ms slices and yields to input/API threads without
 an unconditional 2 ms sleep. This permits firmware polling a 1 ms timer to run
-near its intended cadence. It does not change any browser interval.
+near its intended cadence. Firmware slices are independent of the browser interval.
 
 Seven-segment history expires after 50 ms of active time. Its relative dwell
 weights still use executed instruction ticks, so Python's MMIO overhead does not
@@ -51,7 +53,7 @@ TypeScript/Vite build passed. The updated main service on port 8765 was restarte
 and its rendered counter was checked again. Live service evidence is saved in
 `build/realtime-live-verification.json`; screenshots are in
 `test-results/realtime-live-board.png` and `realtime-live-seven-segment.png`.
-The browser polling source is byte-for-byte identical to its pre-change backup.
+That historical run used the original 150 ms browser polling interval.
 
 ## LCD and keypad response
 
@@ -63,8 +65,8 @@ P1.23–26 read columns. It preserves the user's alternate key map: A adds, B
 subtracts, F equals and E restarts. This differs from the built-in Lab 9 reference,
 where E equals and F clears.
 
-The calculator browser check measured its full prompt at about 364 ms and the
-largest backend-to-render delay at about 160 ms with the unchanged 150 ms UI
+The original calculator browser check measured its full prompt at about 364 ms
+and the largest backend-to-render delay at about 160 ms with the former 150 ms UI
 interval. The test also verifies 3+4=7, 2−8=−6 and 9+9=18 through actual keypad
 controls; backend checks include −9/zero results and release behavior. Evidence:
 `test-results/calculator-render-latency.json`, `tests/test_user_calculator.py` and

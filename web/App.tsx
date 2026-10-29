@@ -39,6 +39,7 @@ export function App() {
  selectedExercise.current=exercise;
  const sourceEditor=useRef<HTMLTextAreaElement>(null),lineNumbers=useRef<HTMLPreElement>(null),sourceHighlight=useRef<HTMLPreElement>(null);
  const editorPosition=useRef({start:0,end:0,top:0,left:0});
+ const pendingEditorSelection=useRef<number|null>(null);
  const attachSourceEditor=useCallback((editor:HTMLTextAreaElement|null)=>{
   const previous=sourceEditor.current;
   if(previous)editorPosition.current={start:previous.selectionStart,end:previous.selectionEnd,top:previous.scrollTop,left:previous.scrollLeft};
@@ -59,7 +60,14 @@ export function App() {
    highlight.scrollTop=editor.scrollTop;highlight.scrollLeft=editor.scrollLeft;
   }
  };
- useLayoutEffect(syncEditorScroll,[source,screen,info,layout]);
+ useLayoutEffect(()=>{
+  const editor=sourceEditor.current,position=pendingEditorSelection.current;
+  if(editor&&position!==null){
+   editor.setSelectionRange(position,position);
+   pendingEditorSelection.current=null;
+  }
+  syncEditorScroll();
+ },[source,screen,info,layout]);
  useLayoutEffect(()=>{
   const editor=sourceEditor.current;
   if(!editor)return;
@@ -97,7 +105,7 @@ export function App() {
    try {const s=await api<State>('/api/state');if(!cancelled&&rev===revision.current)setState(s);}
    catch(e){if(!cancelled)setError((e as Error).message);}
    finally{polling=false;}
-  },150);
+  },50);
   const release=()=>{void physical({action:'release-inputs'});};
   window.addEventListener('blur',release);
   return()=>{cancelled=true;clearInterval(timer);window.removeEventListener('blur',release);};
@@ -231,7 +239,17 @@ export function App() {
      <pre ref={sourceHighlight} className="code-highlight" aria-hidden="true"><CSource source={source}/><br/></pre>
      <textarea ref={attachSourceEditor} aria-label="Embedded C editor" className="code-editor" value={source} spellCheck={false} disabled={busy} wrap="off" onScroll={syncEditorScroll}
       onChange={e=>{latestSource.current=e.target.value;setSource(e.target.value);setDirty(true);setFirmwareKind('c');}}
-      onKeyDown={e=>{if(e.key==='Tab'){e.preventDefault();const editor=e.currentTarget,start=editor.selectionStart,end=editor.selectionEnd;const next=source.slice(0,start)+'    '+source.slice(end);latestSource.current=next;setSource(next);setDirty(true);setFirmwareKind('c');requestAnimationFrame(()=>editor.setSelectionRange(start+4,start+4));}}}/>
+      onKeyDown={e=>{
+       if(e.key!=='Tab')return;
+       e.preventDefault();
+       const editor=e.currentTarget,start=editor.selectionStart,end=editor.selectionEnd;
+       const next=source.slice(0,start)+'    '+source.slice(end);
+       latestSource.current=next;
+       // Restore the caret during the commit, before another key can be typed.
+       if(next===source)editor.setSelectionRange(start+4,start+4);
+       else {pendingEditorSelection.current=start+4;setSource(next);}
+       setDirty(true);setFirmwareKind('c');
+      }}/>
      </div>
     </div>
     <div className="ide-actions">

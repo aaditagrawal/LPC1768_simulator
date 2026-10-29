@@ -118,14 +118,15 @@ the service's memory and reset when the service is restarted.
 Supported board models: eight GPIO LEDs, SW2 polling/EINT, four BCD-addressed
 seven-segment digits, 4-bit HD44780 text, 4×4 GPIO-scanned keypad, ADC0.4/0.5,
 basic timers and PWM1.4 duty on LD10. A bounded worker keeps infinite loops
-off the UI thread. Every relevant GPIO write is observed; UI polling at about
-7 FPS does not determine LCD/segment decoding.
+off the UI thread. Every relevant GPIO write is observed; UI polling every
+50 ms (up to 20 updates per second) does not determine LCD/segment decoding.
 
 This is a tested subset, **not full LPC1768 compatibility**. Live Timer0–3 and
 PWM counters follow monotonic elapsed time and the configured oscillator,
 PLL0, CCLK divider, PCLKSEL and prescaler registers. Pause freezes this clock;
 resume excludes paused time. A timer-driven 1 ms multiplex scan can therefore
-count at approximately one-second intervals. The UI polling rate is unchanged.
+count at approximately one-second intervals. Faster UI polling improves visual
+feedback without changing the emulated CPU or peripheral clock rates.
 CPU throughput, software delay loops and high-rate interrupt service remain
 host-limited; execution is not cycle accurate. ADC conversions follow the configured ADC clock and conversion timing.
 See [timing behavior and measured checks](TIMING.md).

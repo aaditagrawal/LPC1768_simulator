@@ -39,6 +39,26 @@ test('C colors update while editing without changing text, indentation or downlo
  expect(await readFile((await download.path())!,'utf8')).toBe(sample+'    return 123;');
 });
 
+test('Tab indentation cannot move the caret backward after subsequent typing',async({page})=>{
+ await page.goto('/#ide');
+ const editor=page.getByLabel('Embedded C editor');
+ await editor.fill('int value;\n');await editor.press('Control+End');
+ // Reproduce a delayed frame while keyboard input continues normally.
+ await page.evaluate(()=>{
+  const original=window.requestAnimationFrame,pending:FrameRequestCallback[]=[];
+  window.requestAnimationFrame=callback=>pending.push(callback);
+  (window as any).releaseEditorFrames=()=>{
+   window.requestAnimationFrame=original;
+   pending.forEach(callback=>callback(performance.now()));
+  };
+ });
+ await editor.press('Tab');await editor.pressSequentially('re');
+ await page.evaluate(()=>(window as any).releaseEditorFrames());
+ await editor.pressSequentially('turn 123;');
+ await expect(editor).toHaveValue('int value;\n    return 123;');
+ await expect(page.locator('.code-highlight .c-source')).toHaveText('int value;\n    return 123;',{useInnerText:false});
+});
+
 test('highlighted text follows both scroll axes and keeps its position across navigation',async({page})=>{
  await page.goto('/#ide');
  const editor=page.getByLabel('Embedded C editor');

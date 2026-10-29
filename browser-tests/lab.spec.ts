@@ -122,6 +122,10 @@ test('compilation survives screen changes and disables source replacement',async
 });
 
 test('window blur releases inputs after queued presses',async({page,request})=>{
+ // ArrowRight must change the value, even after another test used the maximum.
+ await request.post('/api/physical',{data:{action:'pot',channel:5,voltage:1.65}});
+ await page.reload();
+ await expect(page.getByLabel('POT1 voltage')).toHaveValue('1.65');
  let release!:()=>void,arrived!:()=>void;
  const gate=new Promise<void>(r=>release=r),arrival=new Promise<void>(r=>arrived=r);
  await page.route('**/api/physical',async route=>{
