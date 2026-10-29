@@ -55,10 +55,12 @@ export function Board({info,state,layout:l,physical,control}:Props) {
  </g>
  <g transform={`translate(${l.seven[0]},${l.seven[1]}) scale(${l.seven[2]/200},${l.seven[3]/72})`} aria-label="Four-digit seven-segment display">
  <rect width="200" height="72" rx="3" fill="#17201a"/>
- {state.segments.map((pattern,d)=><g key={d} transform={`translate(${d*50+3},0)`}>
+ {state.segments.map((pattern,d)=><g key={d} aria-label={`U${d+8}`} transform={`translate(${(3-d)*50+3},0)`}>
+  <title>{`U${d+8}`}</title>
   <rect x="-2" y="-1" width="48" height="73" rx="2" fill="none" stroke="#94a38c" strokeWidth=".7"/>
   {segmentPolygons.map((p,i)=><polygon key={i} points={p} fill={pattern&(1<<i)?'#ff4b36':'#697567'}/>)}
   <circle cx="44" cy="65" r="3" fill={pattern&128?'#ff4b36':'#697567'}/>
+  <text x="21" y="87" textAnchor="middle" fill="#d7e7cf" fontSize="7">U{d+8}</text>
  </g>)}
  </g>
  {l.leds.map(([x,y],i)=><g key={i} aria-label={`LD${i+2} ${state.leds[i]?'on':'off'}`}>

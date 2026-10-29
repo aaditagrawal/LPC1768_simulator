@@ -43,7 +43,7 @@ export function App() {
  selectedExercise.current=exercise;
  const sourceEditor=useRef<HTMLTextAreaElement>(null),lineNumbers=useRef<HTMLPreElement>(null),sourceHighlight=useRef<HTMLPreElement>(null);
  const editorPosition=useRef({start:0,end:0,top:0,left:0});
- const pendingEditorSelection=useRef<number|null>(null);
+ const pendingEditorSelection=useRef<{start:number;end:number;direction:'forward'|'backward'|'none'}|null>(null);
  const attachSourceEditor=useCallback((editor:HTMLTextAreaElement|null)=>{
   const previous=sourceEditor.current;
   if(previous)editorPosition.current={start:previous.selectionStart,end:previous.selectionEnd,top:previous.scrollTop,left:previous.scrollLeft};
@@ -67,7 +67,7 @@ export function App() {
  useLayoutEffect(()=>{
   const editor=sourceEditor.current,position=pendingEditorSelection.current;
   if(editor&&position!==null){
-   editor.setSelectionRange(position,position);
+   editor.setSelectionRange(position.start,position.end,position.direction);
    pendingEditorSelection.current=null;
   }
   syncEditorScroll();
@@ -247,11 +247,27 @@ export function App() {
        if(e.key!=='Tab')return;
        e.preventDefault();
        const editor=e.currentTarget,start=editor.selectionStart,end=editor.selectionEnd;
+       if(e.shiftKey){
+        const first=source.slice(0,start).lastIndexOf('\n')+1;
+        const lineEnd=source.indexOf('\n',end>start?end-1:end);
+        const last=lineEnd<0?source.length:lineEnd;
+        let removedBeforeStart=0,removedBeforeEnd=0;
+        const block=source.slice(first,last).replace(/^(?:\t| {1,4})/gm,(indent,offset:number)=>{
+         removedBeforeStart+=Math.min(indent.length,Math.max(0,start-first-offset));
+         removedBeforeEnd+=Math.min(indent.length,Math.max(0,end-first-offset));
+         return '';
+        });
+        const next=source.slice(0,first)+block+source.slice(last);
+        if(next===source)return;
+        pendingEditorSelection.current={start:start-removedBeforeStart,end:end-removedBeforeEnd,direction:editor.selectionDirection};
+        latestSource.current=next;setSource(next);setDirty(true);setFirmwareKind('c');
+        return;
+       }
        const next=source.slice(0,start)+'    '+source.slice(end);
        latestSource.current=next;
        // Restore the caret during the commit, before another key can be typed.
        if(next===source)editor.setSelectionRange(start+4,start+4);
-       else {pendingEditorSelection.current=start+4;setSource(next);}
+       else {pendingEditorSelection.current={start:start+4,end:start+4,direction:'none'};setSource(next);}
        setDirty(true);setFirmwareKind('c');
       }}/>
      </div>

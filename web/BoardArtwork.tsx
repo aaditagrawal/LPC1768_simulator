@@ -242,7 +242,7 @@ export const BoardArtwork=memo(function BoardArtwork() {
   <Section x={203} y={679} w={113} h={111} label="PWM"><Capacitor x={215} y={707} r={7}/><text x="219" y="775" textAnchor="middle" fill={silk} fontSize="7">LD10</text></Section>
   <Section x={54} y={805} w={262} h={180} label="GENERAL PURPOSE LEDS">
    <Passives x={92} y={890} n={8} step={26} vertical/>
-   {[0,1,2,3,4,5,6,7].map(i=><g key={i}><path d={`M${94+i*26} 902v16m0 17v13`} stroke="#b9c9a3" strokeWidth="1.5"/><text x={94+i*26} y="958" textAnchor="middle" fill={silk} fontSize="7">LD{i+2}</text></g>)}
+   {[0,1,2,3,4,5,6,7].map(i=><g key={i}><path d={`M${94+i*26} 902v16m0 17v13`} stroke="#b9c9a3" strokeWidth="1.5"/><text x={94+i*26} y="958" textAnchor="middle" fill={silk} fontSize="7">LD{9-i}</text></g>)}
    <circle cx="285" cy="846" r="4" fill="#bcc8a0"/>
    <text x="285" y="833" textAnchor="middle" fill={silk} fontSize="7">TP7</text>
   </Section>

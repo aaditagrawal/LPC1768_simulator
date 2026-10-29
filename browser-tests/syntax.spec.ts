@@ -59,6 +59,41 @@ test('Tab indentation cannot move the caret backward after subsequent typing',as
  await expect(page.locator('.code-highlight .c-source')).toHaveText('int value;\n    return 123;',{useInnerText:false});
 });
 
+const unindentCases=[
+ {name:'four spaces',source:'    return;',start:11,end:11,want:'return;',selection:[7,7]},
+ {name:'partial indentation',source:'  return;',start:9,end:9,want:'return;',selection:[7,7]},
+ {name:'a literal tab',source:'\treturn;',start:8,end:8,want:'return;',selection:[7,7]},
+ {name:'caret within indentation',source:'    return;',start:2,end:2,want:'return;',selection:[0,0]},
+ {name:'unindented code',source:'return;',start:7,end:7,want:'return;',selection:[7,7]},
+ {name:'an empty editor',source:'',start:0,end:0,want:'',selection:[0,0]},
+ {name:'selected lines ending at the next line start',source:'    first;\n        second;\n    third;',start:4,end:27,want:'first;\n    second;\n    third;',selection:[0,19]},
+ {name:'a backward selection',source:'    first;\n        second;\n    third;',start:6,end:24,direction:'backward' as const,want:'first;\n    second;\n    third;',selection:[2,16]},
+ {name:'an unindented selection',source:'first;\nsecond;',start:0,end:14,want:'first;\nsecond;',selection:[0,14]},
+];
+for(const example of unindentCases){
+ test(`Shift+Tab unindents ${example.name} and preserves the selection`,async({page})=>{
+  await page.goto('/#ide');
+  const editor=page.getByLabel('Embedded C editor');
+  await editor.fill(example.source);
+  await editor.evaluate((el:HTMLTextAreaElement,{start,end,direction})=>el.setSelectionRange(start,end,direction),
+   {start:example.start,end:example.end,direction:example.direction??'forward'});
+  await editor.press('Shift+Tab');
+  await expect(editor).toHaveValue(example.want);
+  await expect(editor).toBeFocused();
+  expect(await editor.evaluate((el:HTMLTextAreaElement)=>[el.selectionStart,el.selectionEnd])).toEqual(example.selection);
+  if(example.direction)expect(await editor.evaluate((el:HTMLTextAreaElement)=>el.selectionDirection)).toBe(example.direction);
+  await expect(page.locator('.code-highlight .c-source')).toHaveText(example.want,{useInnerText:false});
+ });
+}
+
+test('typing immediately after Shift+Tab uses the restored caret',async({page})=>{
+ await page.goto('/#ide');
+ const editor=page.getByLabel('Embedded C editor');
+ await editor.fill('    return');await editor.press('Control+End');
+ await editor.press('Shift+Tab');await editor.pressSequentially(' 123;');
+ await expect(editor).toHaveValue('return 123;');
+});
+
 test('highlighted text follows both scroll axes and keeps its position across navigation',async({page})=>{
  await page.goto('/#ide');
  const editor=page.getByLabel('Embedded C editor');

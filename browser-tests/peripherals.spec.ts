@@ -75,6 +75,18 @@ test('POT1 slider drives ADC text and opening the LCD jumper hides both text lin
  await expect(lines.nth(1)).toContainText('-4095 counts');
 });
 
+test('LED bit zero lights LD2 at the right end of the row',async({page,request})=>{
+ await compile(page,`#include <LPC17xx.h>
+ int main(void) {LPC_GPIO0->FIODIR=0xFF0;LPC_GPIO0->FIOSET=0x10;while(1) {}}`);
+ await request.post('/api/physical',{data:{action:'connect',a:'CNA',b:'CNA1'}});
+ await page.getByRole('button',{name:'▶ Run',exact:true}).click();
+ const leds=page.locator('g[aria-label^="LD"]').filter({has:page.locator('ellipse')});
+ await expect.poll(()=>leds.evaluateAll(elements=>elements
+  .sort((a,b)=>a.getBoundingClientRect().x-b.getBoundingClientRect().x)
+  .map(element=>element.getAttribute('aria-label')!.endsWith(' on'))))
+  .toEqual([false,false,false,false,false,false,false,true]);
+});
+
 test('firmware segment bits and PWM duty reach the drawn displays and respect cable removal', async ({page, request}) => {
  const source = `#include <LPC17xx.h>
  int main(void) {unsigned d; volatile unsigned wait;
@@ -91,6 +103,10 @@ test('firmware segment bits and PWM duty reach the drawn displays and respect ca
  const visibleBits = () => display.locator(':scope > g').evaluateAll(digits => digits.map(digit =>
   [...digit.querySelectorAll('polygon')].reduce((bits, segment, i) => bits | (segment.getAttribute('fill')==='#ff4b36' ? 1<<i : 0), 0)));
  await expect.poll(visibleBits).toEqual([0x06,0x5B,0x4F,0x66]);
+ const physicalBits=()=>display.locator(':scope > g').evaluateAll(digits=>digits
+  .sort((a,b)=>a.getBoundingClientRect().x-b.getBoundingClientRect().x)
+  .map(digit=>[...digit.querySelectorAll('polygon')].reduce((bits,segment,i)=>bits|(segment.getAttribute('fill')==='#ff4b36'?1<<i:0),0)));
+ await expect.poll(physicalBits).toEqual([0x66,0x4F,0x5B,0x06]);
  await page.screenshot({path:'test-results/peripheral-seven-segment.png', fullPage:true});
  await request.post('/api/physical', {data:{action:'disconnect', header:'CNA'}});
  await expect.poll(visibleBits).toEqual([0,0,0,0]);

@@ -1,5 +1,27 @@
 import {test,expect} from '@playwright/test';
 
+test('seven-segment and LED component numbers increase from right to left',async({page})=>{
+ await page.goto('/#board');
+ const board=page.getByLabel('Interactive ALS LPC1768 evaluation board',{exact:true});
+ const display=page.getByLabel('Four-digit seven-segment display',{exact:true});
+ await expect(display).toBeVisible();
+ // Read physical screen positions, independently of the order of SVG elements.
+ const digits=await display.locator(':scope > g').evaluateAll(elements=>elements
+  .sort((a,b)=>a.getBoundingClientRect().x-b.getBoundingClientRect().x)
+  .map(element=>element.getAttribute('aria-label')));
+ expect(digits).toEqual(['U11','U10','U9','U8']);
+ const leds=await board.locator('g[aria-label^="LD"]').filter({has:page.locator('ellipse')}).evaluateAll(elements=>elements
+  .sort((a,b)=>a.getBoundingClientRect().x-b.getBoundingClientRect().x)
+  .map(element=>element.querySelector('title')!.textContent));
+ expect(leds).toEqual(['LD9','LD8','LD7','LD6','LD5','LD4','LD3','LD2']);
+ const labels=await board.locator('text').evaluateAll(elements=>elements
+  .filter(element=>/^(U(?:8|9|10|11)|LD[2-9])$/.test(element.textContent??''))
+  .sort((a,b)=>a.getBoundingClientRect().x-b.getBoundingClientRect().x)
+  .map(element=>element.textContent));
+ expect(labels.filter(label=>label!.startsWith('U'))).toEqual(['U11','U10','U9','U8']);
+ expect(labels.filter(label=>label!.startsWith('LD'))).toEqual(['LD9','LD8','LD7','LD6','LD5','LD4','LD3','LD2']);
+});
+
 test('the complete evaluation board renders as vectors without a photograph',async({page})=>{
  await page.goto('/');
  const board=page.getByLabel('Interactive ALS LPC1768 evaluation board',{exact:true});
