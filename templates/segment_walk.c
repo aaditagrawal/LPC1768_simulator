@@ -50,7 +50,7 @@ int main(void) {
     setup();
     while (1) {
         for (segment = 0; segment < 8; ++segment) {
-            show(0, 1u << segment);
+            show(3, 1u << segment);
             wait_ms(250);
         }
     }

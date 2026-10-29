@@ -33,14 +33,14 @@ def test_walking_segment_sequence():
     machine, clock = start('segment_walk.c')
     machine.run(3000)
     advance(machine, clock, 1)
-    assert machine.snapshot()['segments'] == [1, 0, 0, 0]
+    assert machine.snapshot()['segments'] == [0, 0, 0, 1]
     for bit in range(1, 8):
         advance(machine, clock, 250)
         advance(machine, clock, 1)
-        assert machine.snapshot()['segments'] == [1 << bit, 0, 0, 0]
+        assert machine.snapshot()['segments'] == [0, 0, 0, 1 << bit]
     advance(machine, clock, 250)
     advance(machine, clock, 1)
-    assert machine.snapshot()['segments'] == [1, 0, 0, 0]
+    assert machine.snapshot()['segments'] == [0, 0, 0, 1]
 
 
 def test_multiplex_displays_all_digits_repeatedly():
@@ -50,9 +50,9 @@ def test_multiplex_displays_all_digits_repeatedly():
     original = machine.seven.observe
 
     def observe(tick, digit, pattern, **kwargs):
-        if 0 <= digit < 4 and pattern and pattern != [6, 91, 79, 102][digit]:
+        if 0 <= digit < 4 and pattern and pattern != [102, 79, 91, 6][digit]:
             unexpected.append((digit, pattern))
-        if 0 <= digit < 4 and pattern == [6, 91, 79, 102][digit]:
+        if 0 <= digit < 4 and pattern == [102, 79, 91, 6][digit]:
             counts[digit] += 1
         original(tick, digit, pattern, **kwargs)
 
@@ -62,7 +62,7 @@ def test_multiplex_displays_all_digits_repeatedly():
     for _ in range(24):
         advance(machine, clock, 2)
         observed.add(tuple(machine.snapshot()['segments']))
-    assert (6, 91, 79, 102) in observed
+    assert (102, 79, 91, 6) in observed
     # Every digit must be driven repeatedly, not merely written once.
     assert all(count > 1 for count in counts), counts
     assert unexpected == [], unexpected
@@ -80,5 +80,5 @@ def test_walking_segment_uses_wall_clock():
     seen = set()
     while time.monotonic() < deadline and not {1, 2, 4}.issubset(seen):
         machine.run(3000)
-        seen.add(machine.snapshot()['segments'][0])
+        seen.add(machine.snapshot()['segments'][3])
     assert {1, 2, 4}.issubset(seen), seen

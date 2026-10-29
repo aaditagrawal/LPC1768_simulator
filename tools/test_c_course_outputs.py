@@ -702,11 +702,18 @@ def source_errors(ledger):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--corpus', type=Path, default=DEFAULT)
+    parser.add_argument('--corpus', type=Path,
+                        default=Path(os.environ['CURRICULAR_ES']) if os.environ.get('CURRICULAR_ES') else None,
+                        help='complete studied ES corpus; required for the full 26-source report')
     parser.add_argument('--opts', default='0,1,2,3')
     parser.add_argument('--only', default='', help='comma-separated substrings of source paths')
     parser.add_argument('--output', type=Path, default=ROOT / 'build/c-course-outputs.json')
     args = parser.parse_args()
+    if args.corpus is None:
+        if not args.only:
+            parser.error('The full report requires --corpus PATH or CURRICULAR_ES; '
+                         'the bundled fixtures are a subset. Use --only SELECTOR for a bundled probe.')
+        args.corpus = DEFAULT
     ledger = Ledger(args.corpus, [int(o) for o in args.opts.split(',')])
     probes = [
         ('Lab6/init.c', probe_init), ('BULBARR', probe_bulbarr), ('valuelist', probe_valuelist),
@@ -721,15 +728,22 @@ def main():
         ('dice', dice), ('Lab10/ADC.c', adc_plain), ('PWM_Keyboard', pwm_keyboard),
         ('references', references), ('source_errors', source_errors)]
     wanted = [w for w in args.only.split(',') if w]
+    selected = [(name, fn) for name, fn in probes if not wanted or any(w in name for w in wanted)]
+    if not selected:
+        parser.error('No probes matched --only; choose a supported source/probe name.')
     start = time.perf_counter()
-    for name, fn in probes:
-        if wanted and not any(w in name for w in wanted):
-            continue
-        fn(ledger)
+    for name, fn in selected:
+        try:
+            fn(ledger)
+        except FileNotFoundError as error:
+            parser.error(f'Required source is not in this corpus: {error.filename}. '
+                         'Pass --corpus with the complete original source tree.')
     from collections import Counter
     counts = Counter(r['status'] for r in ledger.rows)
     mismatches = [r['source'] for r in ledger.rows if r['model_matches_source'] is False]
-    report = {'corpus': str(args.corpus), 'wall_s': round(time.perf_counter() - start, 1),
+    report = {'corpus': str(args.corpus), 'scope': 'selected probes' if wanted else 'full studied corpus',
+              'selected_probes': [name for name, _ in selected],
+              'wall_s': round(time.perf_counter() - start, 1),
               'status_counts': counts, 'model_mismatches': mismatches, 'rows': ledger.rows}
     args.output.parent.mkdir(exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, default=str) + '\n')

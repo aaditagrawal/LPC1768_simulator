@@ -269,6 +269,50 @@ def test_frequent_live_systick_does_not_starve_foreground_loop(retained_hook):
         assert (machine._block_hook is not None) == retained_hook
 
 
+@pytest.fixture(scope='module')
+def counter_hex():
+    return Compiler().compile((Path(__file__).parent / 'fixtures/realtime_counter.c').read_text()).hex
+
+
+def counter_machine(image):
+    clock = Clock()
+    machine = Machine(image, realtime=True, clock_ns=clock)
+    for a, b in [('CNA', 'CNA2'), ('CNB', 'CNB2'), ('CND', 'CNB1')]:
+        machine.board.connect(a, b)
+    machine.resume_clock()
+    machine.run(5000, timeout_us=0)
+    return machine, clock
+
+
+def test_compiled_millisecond_counter_rate_with_controlled_service_clock(counter_hex):
+    machine, clock = counter_machine(counter_hex)
+    transitions = {}
+    expected = [(63, 63, 63, pattern) for pattern in (6, 91, 79)]
+    for step in range(12400):
+        clock.advance(250_000)
+        machine.run(200, timeout_us=0)
+        if step % 16 == 15:
+            pattern = tuple(machine.snapshot()['segments'])
+            if pattern in expected and pattern not in transitions:
+                transitions[pattern] = clock.ns / 1_000_000_000
+    assert machine.error is None
+    for second, pattern in enumerate(expected, 1):
+        # Includes the display's persistence window and four-ms observation cadence.
+        assert second <= transitions.get(pattern, float('inf')) <= second + .15
+
+
+def test_compiled_polled_match_flag_coalesces_when_service_is_late(counter_hex):
+    machine, clock = counter_machine(counter_hex)
+    for _ in range(550):
+        clock.advance(2_000_000)
+        machine.run(400, timeout_us=0)
+    # 1,100 matches have elapsed but a single pending bit cannot queue two
+    # wait1ms returns per service slice. Firmware has not counted to 1,000.
+    assert machine.snapshot()['segments'] == [63, 63, 63, 63]
+    assert machine.error is None
+
+
+@pytest.mark.performance
 def test_millisecond_multiplexed_counter_advances_near_wall_clock_seconds():
     source = (Path(__file__).parent / 'fixtures/realtime_counter.c').read_text()
     rt = Runtime()
@@ -283,9 +327,10 @@ def test_millisecond_multiplexed_counter_advances_near_wall_clock_seconds():
             deadline = started + len(transitions) + 1.8
             while time.perf_counter() < deadline:
                 state = rt.snapshot()
+                observed_at = time.perf_counter()
                 assert state['error'] is None
-                if state['segments'] == expected:
-                    transitions.append(time.perf_counter() - started)
+                if state['segments'] == expected and observed_at <= deadline:
+                    transitions.append(observed_at - started)
                     break
                 time.sleep(.01)
             else:

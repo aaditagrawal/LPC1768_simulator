@@ -46,7 +46,7 @@ static void show(unsigned digit, unsigned segments) {
 }
 
 int main(void) {
-    const unsigned patterns[4] = {0x06, 0x5B, 0x4F, 0x66};
+    const unsigned patterns[4] = {0x66, 0x4F, 0x5B, 0x06};
     unsigned digit;
     setup();
     while (1) {

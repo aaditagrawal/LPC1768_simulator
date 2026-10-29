@@ -4,6 +4,7 @@ import hashlib
 from io import BytesIO
 import json
 import math
+import os
 from pathlib import Path
 import struct
 import sys
@@ -137,13 +138,20 @@ def run(path):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--corpus', type=Path, default=Path(str(Path(__file__).resolve().parents[1] / 'fixtures/curricular')))
+    parser.add_argument('--corpus', type=Path,
+                        default=Path(os.environ['CURRICULAR_ES']) if os.environ.get('CURRICULAR_ES') else None,
+                        help='complete studied ES tree with its 20 assembly sources')
     parser.add_argument('--output', type=Path, default=ROOT / 'build/assembly-corpus-report.json')
     parser.add_argument('--allow-source-issues', action='store_true')
     args = parser.parse_args()
-    records = [run(path) for path in sorted(args.corpus.rglob('*.asm'))]
-    if len(records) != 20:
-        raise AssertionError(f'Expected the studied 20-source corpus, found {len(records)}')
+    if args.corpus is None:
+        parser.error('This report requires --corpus PATH or CURRICULAR_ES; '
+                     'the full 20-source assembly corpus is not bundled.')
+    sources = sorted(args.corpus.rglob('*.asm'))
+    if len(sources) != 20:
+        parser.error(f'The studied report requires 20 assembly sources; found {len(sources)}. '
+                     'Provide the complete original corpus.')
+    records = [run(path) for path in sources]
     for record in records:
         record['source'] = str(Path(record['source']).relative_to(args.corpus))
         print(record['outcome'], record['source'], 'expected', record['expected'], 'actual', record['actual'])
