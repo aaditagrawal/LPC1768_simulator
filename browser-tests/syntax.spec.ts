@@ -130,6 +130,42 @@ test('typing and repeated Enter keep the indentation at the restored caret',asyn
  await expect(editor).toHaveValue('    first;\n    second;\n    third;');
 });
 
+test('Backspace reverses a leading Tab and subsequent typing uses the restored caret',async({page})=>{
+ await page.goto('/#ide');
+ const editor=page.getByLabel('Embedded C editor');
+ await editor.fill('int main(void)\n');await editor.press('Control+End');
+ await editor.press('Tab');await editor.press('Backspace');
+ await expect(editor).toHaveValue('int main(void)\n');
+ await editor.press('Tab');await editor.press('Tab');await editor.press('Backspace');
+ await editor.pressSequentially('return;');
+ await expect(editor).toHaveValue('int main(void)\n    return;');
+});
+
+test('Backspace uses indentation stops only before code and preserves normal deletion',async({page})=>{
+ await page.goto('/#ide');
+ const editor=page.getByLabel('Embedded C editor');
+ const cases=[
+  {name:'nested indentation',source:'        value;',start:8,end:8,want:'    value;',caret:4},
+  {name:'partial indentation',source:'      value;',start:6,end:6,want:'    value;',caret:4},
+  {name:'mixed tabs and spaces',source:'\t  value;',start:3,end:3,want:'\tvalue;',caret:1},
+  {name:'inside indentation',source:'        value;',start:6,end:6,want:'      value;',caret:4},
+  {name:'a literal tab',source:'\tvalue;',start:1,end:1,want:'value;',caret:0},
+  {name:'selected spaces',source:'    value;',start:1,end:4,want:' value;',caret:1},
+  {name:'a code character',source:'    value;',start:10,end:10,want:'    value',caret:9},
+  {name:'spaces after code',source:'    value;  ',start:12,end:12,want:'    value; ',caret:11},
+  {name:'joining lines',source:'    one;\n    two;',start:9,end:9,want:'    one;    two;',caret:8},
+  {name:'an empty editor',source:'',start:0,end:0,want:'',caret:0},
+ ];
+ for(const example of cases)await test.step(example.name,async()=>{
+  await editor.fill(example.source);
+  await editor.evaluate((el:HTMLTextAreaElement,{start,end})=>el.setSelectionRange(start,end),{start:example.start,end:example.end});
+  await editor.press('Backspace');
+  await expect(editor).toHaveValue(example.want);
+  expect(await editor.evaluate((el:HTMLTextAreaElement)=>[el.selectionStart,el.selectionEnd])).toEqual([example.caret,example.caret]);
+  await expect(page.locator('.code-highlight .c-source')).toHaveText(example.want,{useInnerText:false});
+ });
+});
+
 test('highlighted text follows both scroll axes and keeps its position across navigation',async({page})=>{
  await page.goto('/#ide');
  const editor=page.getByLabel('Embedded C editor');

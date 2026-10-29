@@ -244,10 +244,20 @@ export function App() {
      <textarea ref={attachSourceEditor} aria-label="Embedded C editor" className="code-editor" value={source} spellCheck={false} disabled={busy} wrap="off" onScroll={syncEditorScroll}
       onChange={e=>{latestSource.current=e.target.value;setSource(e.target.value);setDirty(true);setFirmwareKind('c');}}
       onKeyDown={e=>{
-       if(e.key!=='Tab'&&e.key!=='Enter')return;
-       if(e.nativeEvent.isComposing||(e.key==='Enter'&&(e.ctrlKey||e.altKey||e.metaKey)))return;
-       e.preventDefault();
+       if(e.key!=='Tab'&&e.key!=='Enter'&&e.key!=='Backspace')return;
+       if(e.nativeEvent.isComposing||(e.key!=='Tab'&&(e.ctrlKey||e.altKey||e.metaKey)))return;
        const editor=e.currentTarget,start=editor.selectionStart,end=editor.selectionEnd;
+       let remove=0;
+       if(e.key==='Backspace'){
+        if(start!==end)return;
+        const prefix=source.slice(source.slice(0,start).lastIndexOf('\n')+1,start);
+        if(!/^[ \t]*$/.test(prefix))return;
+        const spaces=prefix.match(/ +$/)?.[0].length??0;
+        // Each literal tab ends at a tab stop, so only trailing spaces count.
+        remove=spaces>0?(spaces-1)%4+1:0;
+        if(remove<=1)return;
+       }
+       e.preventDefault();
        if(e.key==='Tab'&&e.shiftKey){
         const first=source.slice(0,start).lastIndexOf('\n')+1;
         const lineEnd=source.indexOf('\n',end>start?end-1:end);
@@ -265,8 +275,8 @@ export function App() {
         return;
        }
        const lineStart=source.slice(0,start).lastIndexOf('\n')+1;
-       const insertion=e.key==='Enter'?'\n'+source.slice(lineStart,start).match(/^[ \t]*/)![0]:'    ';
-       const next=source.slice(0,start)+insertion+source.slice(end),position=start+insertion.length;
+       const insertion=e.key==='Enter'?'\n'+source.slice(lineStart,start).match(/^[ \t]*/)![0]:e.key==='Tab'?'    ':'';
+       const next=source.slice(0,start-remove)+insertion+source.slice(end),position=start-remove+insertion.length;
        latestSource.current=next;
        // Restore the caret during the commit, before another key can be typed.
        if(next===source)editor.setSelectionRange(position,position);
