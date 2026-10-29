@@ -225,5 +225,13 @@ export function App() {
     {error&&<p role="alert" className="error">{error}</p>}
    </section>}
   </main>
+  <footer className="app-footer">
+   <span>LPC1768 Virtual Lab</span>
+   <a href="https://github.com/h4rshupadhyay/LPC1768_simulator" target="_blank" rel="noopener noreferrer" title="View source on GitHub (opens in a new tab)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 3v12a4 4 0 0 0 4 4h8M6 7h8a4 4 0 0 1 4 4v8"/><circle cx="6" cy="3" r="2"/><circle cx="18" cy="5" r="2"/><circle cx="18" cy="19" r="2"/><path d="M18 7v4"/></svg>
+    <span>View on GitHub</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg>
+   </a>
+  </footer>
  </div>;
 }

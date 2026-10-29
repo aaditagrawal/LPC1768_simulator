@@ -27,6 +27,10 @@ test('all screens omit hints and connection answers',async({page})=>{
  for(const screen of ['board','ide','labs']){
   await page.goto(`/#${screen}`);
   await expect(page.getByRole('navigation',{name:'Workspace'})).toBeVisible();
+  const repository=page.getByRole('contentinfo').getByRole('link',{name:'View on GitHub'});
+  await expect(repository).toHaveAttribute('href','https://github.com/h4rshupadhyay/LPC1768_simulator');
+  await expect(repository).toHaveAttribute('target','_blank');
+  await expect(repository).toHaveAttribute('rel','noopener noreferrer');
   await expect(page.getByText(/Show required physical setup|Check Connections|Load reference C|Pin mappings and SW2|Execution evidence|click headers to connect/i)).toHaveCount(0);
   await expect(page.locator('details,.connector-detail,.board-instructions')).toHaveCount(0);
   await expect(page.locator('title').filter({hasText:/P0\.|P2\.|Pins:|JP18 2/})).toHaveCount(0);
