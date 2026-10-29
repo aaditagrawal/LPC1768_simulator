@@ -94,6 +94,42 @@ test('typing immediately after Shift+Tab uses the restored caret',async({page})=
  await expect(editor).toHaveValue('return 123;');
 });
 
+const newlineCases=[
+ {name:'spaces',source:'    int value;',want:'    int value;\n    '},
+ {name:'tabs',source:'\t\tvalue;',want:'\t\tvalue;\n\t\t'},
+ {name:'mixed whitespace',source:' \t value;',want:' \t value;\n \t '},
+ {name:'the current line',source:'int main(void)\n    value;',want:'int main(void)\n    value;\n    '},
+ {name:'an indented blank line',source:'    ',want:'    \n    '},
+ {name:'an unindented line',source:'value;',want:'value;\n'},
+ {name:'an empty editor',source:'',want:'\n'},
+ {name:'a split line',source:'    first;second;',start:10,end:10,want:'    first;\n    second;',caret:15},
+ {name:'a replaced selection',source:'    first;\n        second;',start:4,end:26,want:'    \n    '},
+ {name:'a caret inside indentation',source:'    value;',start:2,end:2,want:'  \n    value;',caret:5},
+];
+for(const example of newlineCases){
+ test(`Enter retains indentation for ${example.name}`,async({page})=>{
+  await page.goto('/#ide');
+  const editor=page.getByLabel('Embedded C editor');
+  await editor.fill(example.source);
+  if(example.start===undefined)await editor.press('Control+End');
+  else await editor.evaluate((el:HTMLTextAreaElement,{start,end})=>el.setSelectionRange(start!,end!),{start:example.start,end:example.end});
+  await editor.press('Enter');
+  await expect(editor).toHaveValue(example.want);
+  const caret=example.caret??example.want.length;
+  expect(await editor.evaluate((el:HTMLTextAreaElement)=>[el.selectionStart,el.selectionEnd])).toEqual([caret,caret]);
+  await expect(page.locator('.code-highlight .c-source')).toHaveText(example.want,{useInnerText:false});
+ });
+}
+
+test('typing and repeated Enter keep the indentation at the restored caret',async({page})=>{
+ await page.goto('/#ide');
+ const editor=page.getByLabel('Embedded C editor');
+ await editor.fill('    first;');await editor.press('Control+End');
+ await editor.press('Enter');await editor.pressSequentially('second;');
+ await editor.press('Enter');await editor.pressSequentially('third;');
+ await expect(editor).toHaveValue('    first;\n    second;\n    third;');
+});
+
 test('highlighted text follows both scroll axes and keeps its position across navigation',async({page})=>{
  await page.goto('/#ide');
  const editor=page.getByLabel('Embedded C editor');

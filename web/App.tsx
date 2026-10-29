@@ -244,10 +244,11 @@ export function App() {
      <textarea ref={attachSourceEditor} aria-label="Embedded C editor" className="code-editor" value={source} spellCheck={false} disabled={busy} wrap="off" onScroll={syncEditorScroll}
       onChange={e=>{latestSource.current=e.target.value;setSource(e.target.value);setDirty(true);setFirmwareKind('c');}}
       onKeyDown={e=>{
-       if(e.key!=='Tab')return;
+       if(e.key!=='Tab'&&e.key!=='Enter')return;
+       if(e.nativeEvent.isComposing||(e.key==='Enter'&&(e.ctrlKey||e.altKey||e.metaKey)))return;
        e.preventDefault();
        const editor=e.currentTarget,start=editor.selectionStart,end=editor.selectionEnd;
-       if(e.shiftKey){
+       if(e.key==='Tab'&&e.shiftKey){
         const first=source.slice(0,start).lastIndexOf('\n')+1;
         const lineEnd=source.indexOf('\n',end>start?end-1:end);
         const last=lineEnd<0?source.length:lineEnd;
@@ -263,11 +264,13 @@ export function App() {
         latestSource.current=next;setSource(next);setDirty(true);setFirmwareKind('c');
         return;
        }
-       const next=source.slice(0,start)+'    '+source.slice(end);
+       const lineStart=source.slice(0,start).lastIndexOf('\n')+1;
+       const insertion=e.key==='Enter'?'\n'+source.slice(lineStart,start).match(/^[ \t]*/)![0]:'    ';
+       const next=source.slice(0,start)+insertion+source.slice(end),position=start+insertion.length;
        latestSource.current=next;
        // Restore the caret during the commit, before another key can be typed.
-       if(next===source)editor.setSelectionRange(start+4,start+4);
-       else {pendingEditorSelection.current={start:start+4,end:start+4,direction:'none'};setSource(next);}
+       if(next===source)editor.setSelectionRange(position,position);
+       else {pendingEditorSelection.current={start:position,end:position,direction:'none'};setSource(next);}
        setDirty(true);setFirmwareKind('c');
       }}/>
      </div>
