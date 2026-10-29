@@ -4,6 +4,7 @@ import {Board} from './Board';
 import {ExerciseSolution} from './ExerciseSolution';
 import {CSource} from './CSource';
 import type {Info,State,Layout,Exercise} from './types';
+import {reconcileViewState,type ViewState} from './viewState';
 
 const DEFAULT_SOURCE=`#include <LPC17xx.h>
 
@@ -24,7 +25,10 @@ const currentScreen=():Screen=>{
 };
 
 export function App() {
- const [info,setInfo]=useState<Info|null>(null),[state,setState]=useState<State|null>(null),[layout,setLayout]=useState<Layout|null>(null);
+ const [info,setInfo]=useState<Info|null>(null),[state,setState]=useState<ViewState|null>(null),[layout,setLayout]=useState<Layout|null>(null);
+ const publishState=useCallback((snapshot:State)=>{
+  setState(previous=>reconcileViewState(previous,snapshot));
+ },[]);
  const [error,setError]=useState(''),[busy,setBusy]=useState(false);
  const [loadingHex,setLoadingHex]=useState(false);
  const [buildError,setBuildError]=useState('');
@@ -79,7 +83,7 @@ export function App() {
  useEffect(()=>{
   let active=true;
   Promise.all([api<Info>('/api/info'),api<State>('/api/state'),api<Layout>('/board/layout.json')])
-   .then(([i,s,l])=>{if(active){setInfo(i);setState(s);setLayout(l);}}).catch(e=>{if(active)setError(String(e.message));});
+   .then(([i,s,l])=>{if(active){setInfo(i);publishState(s);setLayout(l);}}).catch(e=>{if(active)setError(String(e.message));});
   return()=>{active=false;};
  },[]);
  useEffect(()=>{localStorage.setItem('lpc-lab-source',source);},[source]);
@@ -102,7 +106,7 @@ export function App() {
    if(polling)return;
    polling=true;
    const rev=revision.current;
-   try {const s=await api<State>('/api/state');if(!cancelled&&rev===revision.current)setState(s);}
+   try {const s=await api<State>('/api/state');if(!cancelled&&rev===revision.current)publishState(s);}
    catch(e){if(!cancelled)setError((e as Error).message);}
    finally{polling=false;}
   },50);
@@ -114,14 +118,14 @@ export function App() {
  const physical=(data:unknown):Promise<void>=>{
   revision.current++;
   queue.current=queue.current.then(async()=>{
-   try{setState(await api<State>('/api/physical',data));setError('');}
+   try{publishState(await api<State>('/api/physical',data));setError('');}
    catch(e){setError((e as Error).message);}
   });
   return queue.current;
  };
  const control=async(action:string)=>{
   revision.current++;
-  try{await queue.current;setState(await api<State>('/api/control',{action}));setError('');}
+  try{await queue.current;publishState(await api<State>('/api/control',{action}));setError('');}
   catch(e){setError((e as Error).message);}
  };
  const compile=async()=>{
@@ -133,7 +137,7 @@ export function App() {
   const code=source;
   try{
    const result=await api<{state:State;hex:string;diagnostics:string}>('/api/compile',{source:code});
-   setState(result.state);setHex(result.hex);setDirty(latestSource.current!==code);setFirmwareKind('c');setMessage(result.diagnostics);
+   publishState(result.state);setHex(result.hex);setDirty(latestSource.current!==code);setFirmwareKind('c');setMessage(result.diagnostics);
   }catch(e){setBuildError((e as Error).message);setMessage('Compilation failed.');}
   finally{firmwareBusy.current=false;setBusy(false);}
  };
@@ -151,7 +155,7 @@ export function App() {
     revision.current++;
     const uploaded=await api<State>('/api/firmware',{hex:text,name:file.name});
     if(number!==requestNumber.current)return;
-    setState(uploaded);
+    publishState(uploaded);
     setHex(text);setFirmwareKind('hex');setDirty(false);setMessage(`Loaded ${file.name}.`);
     } finally {
      firmwareBusy.current=false;setBusy(false);setLoadingHex(false);

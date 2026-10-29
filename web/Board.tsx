@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import type {Info,State,Layout} from './types';
+import type {Info,Layout} from './types';
+import type {ViewState} from './viewState';
 import {BoardArtwork} from './BoardArtwork';
 import {JumperBody} from './JumperBody';
 import mapping from '../board/mapping.json';
 
-type Props={info:Info;state:State;layout:Layout;physical:(data:unknown)=>Promise<void>;control:(action:string)=>void};
+type Props={info:Info;state:ViewState;layout:Layout;physical:(data:unknown)=>Promise<void>;control:(action:string)=>void};
 const physicalJumpers:Record<string,{pinCount:number}>=mapping.jumpers;
 
 const segmentPolygons=[

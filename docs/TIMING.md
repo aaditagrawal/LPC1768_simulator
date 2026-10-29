@@ -6,6 +6,12 @@ polls every 50 ms (up to 20 updates per second). An in-flight guard skips polls
 while a request is pending, so requests do not pile up. This improves visual
 feedback; CPU execution and peripheral clocks keep their existing timing behavior.
 
+Fetched snapshots now reuse the current React state when all visible outputs,
+inputs, wiring, status and messages are unchanged. Internal instruction counters,
+program-counter progress and raw GPIO diagnostics alone do not redraw the board.
+The API continues to provide those diagnostics on every poll. PWM and pot values
+retain their full precision. See [UI performance measurements](UI_PERFORMANCE.md).
+
 The configured oscillator (4 MHz IRC, board 12 MHz crystal or 32.768 kHz RTC
 source), PLL0 multiplier/predivider, CCLK divider and each peripheral's PCLKSEL
 field determine clock rate. PR/PC prescaling retains fractional clock progress.
