@@ -1,5 +1,6 @@
 import {useEffect,useState} from 'react';
 import {api} from './api';
+import {CSource} from './CSource';
 import type {Exercise} from './types';
 import './ExerciseSolution.css';
 
@@ -37,7 +38,7 @@ export function ExerciseSolution({exercise,compiling,onOpen,onDownload}:Props) {
   {current?.error&&<div className="solution-message"><p role="alert" className="error">{current.error}</p><button onClick={()=>setAttempt(n=>n+1)}>Retry</button></div>}
   {source!==null&&<div className="solution-code" tabIndex={0} role="region" aria-label="Read-only solution code">
    <pre className="solution-line-numbers" aria-hidden="true">{Array.from({length:source.split('\n').length},(_,i)=>i+1).join('\n')}</pre>
-   <pre aria-label="Solution source">{source}</pre>
+   <pre aria-label="Solution source"><CSource source={source}/></pre>
   </div>}
  </section>;
 }

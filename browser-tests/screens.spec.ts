@@ -5,6 +5,7 @@ test('board, IDE and exercises occupy separate screens and retain the source',as
  await expect(page.getByRole('heading',{name:'Virtual evaluation board'})).toBeVisible();
  await expect(page.getByLabel('Embedded C editor')).toHaveCount(0);
  const navigation=page.getByRole('navigation',{name:'Workspace'});
+ await expect(page.getByRole('banner').getByRole('navigation',{name:'Workspace'})).toBeVisible();
  await navigation.getByRole('link',{name:'IDE',exact:true}).click();
  const editor=page.getByLabel('Embedded C editor');
  await editor.fill('#include <LPC17xx.h>\nint main(void) { while(1) {} }\n');

@@ -48,7 +48,8 @@ not implemented.
 
 ## Workspace screens
 
-**Board**, **IDE**, and **Lab exercises** are separate full-width screens.
+**Board**, **IDE**, and **Lab exercises** are separate full-width screens,
+accessible from the compact title-bar tabs.
 The navigation supports browser Back and direct links (`#board`, `#ide`,
 `#labs`). Switching screens preserves source, compiled firmware and wiring.
 
@@ -56,6 +57,8 @@ Select a task on **Lab exercises**, write or upload your C/HEX on **IDE**,
 and use **Board** for physical connections and outputs. Compile on the IDE
 screen; Run, Pause/Resume, Stop and Reset are available on both IDE and Board.
 The editor retains line numbers and saves your source in this browser.
+Both the editor and solution viewer highlight C keywords, comments, strings,
+numbers, preprocessor directives, ARM compiler extensions and LPC register names.
 
 Lab exercises shows the selected task's corrected C solution in a read-only,
 numbered viewer. **Download C** saves that solution; **Open in IDE** explicitly
@@ -146,8 +149,8 @@ electrically verified PCB reproduction. Drawn Ethernet, USB, serial, motor,
 relay and other interfaces do not extend the supported emulation listed above.
 The board automatically fits the available window width and height. Use Zoom
 to inspect details and Fit to restore the complete board without scrolling.
-Connections and messages sit beside the board on wider windows and below it on
-narrow ones; long messages scroll independently of the board.
+Connections and messages sit below the board alongside the voltage controls.
+They wrap on narrow windows; long messages scroll independently of the board.
 
 `board/board.svg` is a standalone vector snapshot. To export the current board
 state again while the local service is running, use `npm.cmd run export:board`

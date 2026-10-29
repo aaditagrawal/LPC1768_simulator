@@ -13,10 +13,14 @@ async function expectBoardFits(page:Page){
   const root=document.documentElement;
   const board=document.querySelector('.board')!.getBoundingClientRect();
   const panel=document.querySelector('.board-scroll')!;
+  const controls=document.querySelector('.board-sidebar')!.getBoundingClientRect();
   const footer=document.querySelector('footer')!.getBoundingClientRect();
+  const navigation=document.querySelector('.screen-nav')!.getBoundingClientRect();
+  const title=document.querySelector('.identity')!.getBoundingClientRect();
+  const singleHeaderRow=innerWidth<800||Math.abs(navigation.top+navigation.height/2-title.top-title.height/2)<2;
   return root.scrollWidth<=innerWidth+1&&root.scrollHeight<=innerHeight+1
    &&board.left>=0&&board.top>=0&&board.right<=innerWidth+1&&board.bottom<=innerHeight+1
-   &&board.height>120&&footer.bottom<=innerHeight+1
+   &&board.height>120&&footer.bottom<=innerHeight+1&&controls.top>=board.bottom-1&&singleHeaderRow
    &&panel.scrollWidth<=panel.clientWidth+1&&panel.scrollHeight<=panel.clientHeight+1;
  })).toBe(true);
 }

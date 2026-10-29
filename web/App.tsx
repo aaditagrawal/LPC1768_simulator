@@ -2,6 +2,7 @@ import {useCallback,useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {api} from './api';
 import {Board} from './Board';
 import {ExerciseSolution} from './ExerciseSolution';
+import {CSource} from './CSource';
 import type {Info,State,Layout,Exercise} from './types';
 
 const DEFAULT_SOURCE=`#include <LPC17xx.h>
@@ -36,7 +37,7 @@ export function App() {
  const requestNumber=useRef(0),latestSource=useRef(source),previousScreen=useRef(screen);
  const firmwareBusy=useRef(false),selectedExercise=useRef(exercise);
  selectedExercise.current=exercise;
- const sourceEditor=useRef<HTMLTextAreaElement>(null),lineNumbers=useRef<HTMLPreElement>(null);
+ const sourceEditor=useRef<HTMLTextAreaElement>(null),lineNumbers=useRef<HTMLPreElement>(null),sourceHighlight=useRef<HTMLPreElement>(null);
  const editorPosition=useRef({start:0,end:0,top:0,left:0});
  const attachSourceEditor=useCallback((editor:HTMLTextAreaElement|null)=>{
   const previous=sourceEditor.current;
@@ -49,9 +50,23 @@ export function App() {
   }
  },[]);
  const syncEditorScroll=()=>{
-  if(sourceEditor.current&&lineNumbers.current)lineNumbers.current.style.transform=`translateY(-${sourceEditor.current.scrollTop}px)`;
+  const editor=sourceEditor.current,highlight=sourceHighlight.current;
+  if(!editor)return;
+  if(lineNumbers.current)lineNumbers.current.style.transform=`translateY(-${editor.scrollTop}px)`;
+  if(highlight){
+   // Match the text viewport, excluding native scrollbars on either axis.
+   highlight.style.width=`${editor.clientWidth}px`;highlight.style.height=`${editor.clientHeight}px`;
+   highlight.scrollTop=editor.scrollTop;highlight.scrollLeft=editor.scrollLeft;
+  }
  };
- useLayoutEffect(syncEditorScroll,[source,screen]);
+ useLayoutEffect(syncEditorScroll,[source,screen,info,layout]);
+ useLayoutEffect(()=>{
+  const editor=sourceEditor.current;
+  if(!editor)return;
+  const observer=new ResizeObserver(syncEditorScroll);
+  observer.observe(editor);
+  return()=>observer.disconnect();
+ },[screen,info,layout]);
 
  useEffect(()=>{
   let active=true;
@@ -167,16 +182,16 @@ export function App() {
   {diagnosticText&&<pre role="status">{diagnosticText}</pre>}
  </div>:null;
 
- return <div className={`app-shell${screen==='board'?' board-view':''}`}>
+ return <div className={`app-shell ${screen}-view`}>
   <header className="app-header">
    <div className="identity"><div className="chip-logo">M3</div><h1>LPC1768 <span>Virtual Lab</span></h1></div>
-   <div className="engine-state"><span className={`dot ${running?'green':state.status==='error'?'red':''}`}/><span>{state.status.toUpperCase()}</span></div>
-  </header>
-  <nav className="screen-nav" aria-label="Workspace">
+   <nav className="screen-nav" aria-label="Workspace">
    <a href="#board" aria-current={screen==='board'?'page':undefined}>Board</a>
    <a href="#ide" aria-current={screen==='ide'?'page':undefined}>IDE</a>
    <a href="#labs" aria-current={screen==='labs'?'page':undefined}>Lab exercises</a>
-  </nav>
+   </nav>
+   <div className="engine-state"><span className={`dot ${running?'green':state.status==='error'?'red':''}`}/><span>{state.status.toUpperCase()}</span></div>
+  </header>
   <main className={`workspace ${screen}-screen`}>
    {screen==='board'&&<section className="board-panel panel" aria-label="Virtual board panel">
     <div className="board-toolbar">
@@ -212,9 +227,12 @@ export function App() {
     <div className="editor-toolbar"><span>program.c</span><span>{firmwareKind==='hex'?'HEX firmware loaded':dirty?'C source · compile pending':'C source · compiled'}</span></div>
     <div className="code-editor-shell">
      <div className="line-number-gutter" aria-hidden="true"><pre ref={lineNumbers}>{Array.from({length:source.split('\n').length},(_,i)=>i+1).join('\n')}</pre></div>
+     <div className="code-input">
+     <pre ref={sourceHighlight} className="code-highlight" aria-hidden="true"><CSource source={source}/><br/></pre>
      <textarea ref={attachSourceEditor} aria-label="Embedded C editor" className="code-editor" value={source} spellCheck={false} disabled={busy} wrap="off" onScroll={syncEditorScroll}
       onChange={e=>{latestSource.current=e.target.value;setSource(e.target.value);setDirty(true);setFirmwareKind('c');}}
       onKeyDown={e=>{if(e.key==='Tab'){e.preventDefault();const editor=e.currentTarget,start=editor.selectionStart,end=editor.selectionEnd;const next=source.slice(0,start)+'    '+source.slice(end);latestSource.current=next;setSource(next);setDirty(true);setFirmwareKind('c');requestAnimationFrame(()=>editor.setSelectionRange(start+4,start+4));}}}/>
+     </div>
     </div>
     <div className="ide-actions">
      <div className="file-actions"><button onClick={()=>fileInput.current?.click()} disabled={busy}>↑ Open C / HEX</button><button onClick={()=>download(source,'program.c')}>↓ C</button><button disabled={!hex} onClick={()=>hex&&download(hex,'firmware.hex')}>↓ HEX</button>
