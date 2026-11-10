@@ -6,6 +6,15 @@ with LEDs, switches, LCD, keypad, seven-segment displays, ADC and PWM.
 
 ## Screenshots
 
+The redesigned [Web Lab](https://lpc1768-student-lab.spanner.workers.dev/#workbench)
+uses a light interface with a split Workbench and dedicated Board and IDE views.
+
+### Workbench
+
+Board and C editor side by side while LCD firmware runs.
+
+![Light Workbench with the wired board and syntax-highlighted C editor side by side](docs/screenshots/workbench.png)
+
 ### Interactive board
 
 Running LCD firmware with ribbon wiring and jumper controls.
@@ -14,7 +23,7 @@ Running LCD firmware with ribbon wiring and jumper controls.
 
 ### C editor
 
-Syntax-highlighted C source with line numbers, compiler output and execution controls.
+Syntax-highlighted C source with line numbers, browser compiler output and execution controls.
 
 ![C editor with syntax-highlighted LCD firmware, a successful build and execution controls](docs/screenshots/ide.png)
 
