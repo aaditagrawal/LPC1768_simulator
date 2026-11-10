@@ -6,9 +6,17 @@ with LEDs, switches, LCD, keypad, seven-segment displays, ADC and PWM.
 
 ## Screenshots
 
-| Interactive board | C editor |
-| --- | --- |
-| ![Virtual board with connectors, jumpers and peripherals](docs/screenshots/board.png) | ![C editor with line numbers, compile and execution controls](docs/screenshots/ide.png) |
+### Interactive board
+
+Running LCD firmware with ribbon wiring and jumper controls.
+
+![Virtual board running an LCD message with CND connected to CNAD and JP5 and JP16 closed](docs/screenshots/board.png)
+
+### C editor
+
+Syntax-highlighted C source with line numbers, compiler output and execution controls.
+
+![C editor with syntax-highlighted LCD firmware, a successful build and execution controls](docs/screenshots/ide.png)
 
 ## Build and run
 
