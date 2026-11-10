@@ -6,9 +6,26 @@ with LEDs, switches, LCD, keypad, seven-segment displays, ADC and PWM.
 
 ## Screenshots
 
-| Interactive board | C editor |
-| --- | --- |
-| ![Virtual board with connectors, jumpers and peripherals](docs/screenshots/board.png) | ![C editor with line numbers, compile and execution controls](docs/screenshots/ide.png) |
+The redesigned [Web Lab](https://lpc1768-student-lab.spanner.workers.dev/#workbench)
+uses a light interface, Geist Mono, a split Workbench and dedicated Board and IDE views.
+
+### Workbench
+
+Board and C editor side by side while LCD firmware runs.
+
+![Light Workbench with the wired board and syntax-highlighted C editor side by side](docs/screenshots/workbench.png)
+
+### Interactive board
+
+Running LCD firmware with ribbon wiring and jumper controls.
+
+![Virtual board running an LCD message with CND connected to CNAD and JP5 and JP16 closed](docs/screenshots/board.png)
+
+### C editor
+
+Syntax-highlighted C source with line numbers, browser compiler output and grouped export controls.
+
+![C editor with syntax-highlighted LCD firmware, a successful build and execution controls](docs/screenshots/ide.png)
 
 ## Build and run
 
